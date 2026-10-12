@@ -20,7 +20,7 @@ Wave 5:  T12 integration hardening + manual test pass
 | T1 | Project scaffold + CI | — | [x] |
 | T2 | Core model, settings, TimeMath | T1 | [x] |
 | T3 | Engine (reducer + outputs) | T2 | [x] |
-| T4 | WakeRule | T2 | [ ] |
+| T4 | WakeRule | T2 | [x] |
 | T5 | Data layer (settings, state, history) | T2 | [ ] |
 | T6 | Scheduler, receivers, ReminderController | T3, T5 | [ ] |
 | T7 | Notifications + ActionReceiver | T2 | [ ] |
