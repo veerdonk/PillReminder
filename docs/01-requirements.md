@@ -66,14 +66,16 @@ settings to make the app reliable (see `06-device-setup-oneplus.md`).
   - **"I took my pill"**
   - **"Snooze (X left)"**, hidden once no snoozes are left
   - **"Not today"** for dose 1, or **"I'm done for today"** for later doses.
-- **FR-3.3** Sound behaviour depends on the phone's ringer mode, which on the OnePlus is set
-  with the alert slider:
-  | Ringer mode | Alarm sound | Vibration |
-  |-------------|-------------|-----------|
-  | Ring (normal) | Yes (alarm volume) | Yes |
-  | Vibrate | **Yes** (rings through vibrate) | Yes |
-  | Silent | **No** | No. The screen alert is shown only. |
-  The ringer mode is checked at the moment the alarm starts ringing.
+- **FR-3.3** Sound behaviour depends on the phone's ringer mode (set with the alert slider on
+  the OnePlus) and on Do Not Disturb:
+  | Phone state | Alarm sound | Vibration | Screen |
+  |-------------|-------------|-----------|--------|
+  | Ring (normal), DND off | Yes (alarm volume) | Yes | Full-screen alert |
+  | Vibrate, DND off | **Yes** (rings through vibrate) | Yes | Full-screen alert |
+  | Silent | **No** | **Yes** | Full-screen alert (screen turns on) |
+  | Do Not Disturb on (any ringer mode) | **No** (treated as silent) | **Yes** | Full-screen alert (screen turns on) |
+  The phone state is checked at the moment the alarm starts ringing. "DND on" means the
+  interruption filter is anything other than "all".
 - **FR-3.4** The alarm rings for `alarmRingDuration` (default **2 min**). If nothing is tapped
   in that time, it stops and behaves as if **Snooze** had been tapped. This counts as a snooze.
 - **FR-3.5** **Snooze** stops the alarm. The alarm rings again after `snoozeDuration`
@@ -194,7 +196,7 @@ alarms are recomputed where the spec defines them in terms of the setting (see s
 | D2 | Fallback | Yes. Separate weekday and weekend times, configurable. |
 | D3 | Weekend | Sat and Sun have their own earliest and fallback times. |
 | D4 | Alarm style | Full-screen alarm with looping sound and vibration, like a clock app |
-| D5 | Ringer modes | Rings through vibrate mode, but not through silent mode (see FR-3.3) |
+| D5 | Ringer modes | Rings through vibrate mode. Silent and Do Not Disturb give no sound, but still vibrate and turn the screen on (see FR-3.3). |
 | D6 | Snooze limit | 3 by default, configurable. Default snooze is 10 min. |
 | D7 | Ring timeout | 2 min, after which it auto-snoozes |
 | D8 | Interval reference | Counted from the moment "I took my pill" is tapped (or the recorded time) |
@@ -203,17 +205,21 @@ alarms are recomputed where the spec defines them in terms of the setting (see s
 | D11 | Day boundary | 03:00 |
 | D12 | History, home status | Yes |
 | D13 | Language | English |
+| D15 | Silent / DND | Light and vibration, no sound (A1, A2) |
 | D14 | Stack | Kotlin, Compose, AlarmManager, DataStore, Room, GitHub Actions APK build |
 
 ## 6. Open points / assumptions
 
 Implementing agents add to this list and the owner confirms the items.
 
-- **A1** In **silent** mode the alarm neither sounds nor vibrates; only the full-screen alert is
-  shown. *(The owner said "not through silent". Vibration in silent mode is assumed to be off,
-  because the OnePlus silent mode also mutes vibration.)*
-- **A2** Do Not Disturb is not checked separately. Only the ringer mode decides (FR-3.3).
-- **A3** Weekend means Saturday and Sunday, fixed. It is not configurable.
-- **A4** A timed-out ring counts as a snooze (FR-3.4/3.6).
-- **A5** Dose 1 has no "snooze" button on the *reminder notification* itself, only on the alarm.
+Confirmed by the owner:
+- **A1 ✓** In **silent** mode the alarm gives light (the screen turns on with the full-screen
+  alert) and vibration, but no sound.
+- **A2 ✓** Do Not Disturb is treated exactly like silent mode: light and vibration, no sound.
+- **A3 ✓** Weekend means Saturday and Sunday, fixed. It is not configurable.
+- **A4 ✓** A timed-out ring counts as a snooze (FR-3.4/3.6).
+- **A5 ✓** The *reminder notification* has no snooze button. Snooze is only on the alarm.
+
+Open:
+- *(none yet)*
   This matches the owner's description: the reminder has 2 buttons.

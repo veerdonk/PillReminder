@@ -268,9 +268,17 @@ type isn't enforced at runtime, but `targetSdk ≥ 34` requires it in the manife
   spec's `canSnooze` changed, it only updates the notification.
 - **On start:**
   1. `startForeground(1001, notifier.buildAlarmNotification(spec))`.
-  2. Read `AudioManager.ringerMode`:
-     - `RINGER_MODE_NORMAL` or `RINGER_MODE_VIBRATE` → play sound and vibrate.
-     - `RINGER_MODE_SILENT` → neither (assumption A1).
+  2. Decide whether to play sound (FR-3.3):
+     - `quiet = audioManager.ringerMode == RINGER_MODE_SILENT ||
+       notificationManager.currentInterruptionFilter != INTERRUPTION_FILTER_ALL`
+     - If not `quiet`, play sound. **Always vibrate**, whatever `quiet` is. The screen/full-screen
+       alert is always shown.
+     - **Check on the device that the vibration really happens in silent mode and under DND.**
+       Vibration with `USAGE_ALARM` attributes is expected to bypass silent mode. Under DND,
+       OxygenOS may suppress it, or may suppress the full-screen intent, unless "Alarms" are
+       allowed in the DND settings or the app is added as a DND exception. If so, document the
+       required DND setting in `06-device-setup-oneplus.md` rather than requesting DND-policy
+       access.
   3. Sound: `MediaPlayer` with `AudioAttributes.USAGE_ALARM` and `CONTENT_TYPE_SONIFICATION`,
      looping. The source is `settings.alarmSoundUri`, or
      `RingtoneManager.getDefaultUri(TYPE_ALARM)`, falling back to `TYPE_RINGTONE`. The alarm stream

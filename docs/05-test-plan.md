@@ -43,7 +43,8 @@ Use `adb shell dumpsys alarm | grep -A3 pillreminder` to check scheduled wake-up
 | M11 | Not today | Fresh day (adjust rollover/earliest as needed). Tap "Not today" on dose 1. | Nothing more happens today. History shows all doses as skipped. "Resume today" brings back the dose 1 reminder. |
 | M12 | Done for today | On dose 2, tap "I'm done for today". | Doses 2 and 3 are skipped. Quiet. |
 | M13 | Ringer: vibrate | Alert slider on vibrate, let the alarm fire. | Sound plays and the phone vibrates. |
-| M14 | Ringer: silent | Alert slider on silent, let the alarm fire. | Full-screen alert only; no sound or vibration. |
+| M14 | Ringer: silent | Alert slider on silent, let the alarm fire. | Screen turns on with the full-screen alert, and it vibrates. No sound. |
+| M14b | Do Not Disturb | Ringer on normal, DND on, let the alarm fire. | Same as M14: light and vibration, no sound. |
 | M15 | Backdate | Before the dose 1 reminder, record "Took pill 1 at" 5 minutes ago. | Detection stops. The dose 2 reminder comes at backdated time + interval (immediately if already past). |
 | M16 | Backdate validation | Try a future time, and a time before the previous dose. | Both are rejected with an error. |
 | M17 | Reboot | While WAITING for dose 2, reboot the phone. | The dose 2 reminder still arrives on time, or immediately after boot if overdue. |

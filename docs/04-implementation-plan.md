@@ -141,8 +141,8 @@ T6 uses a no-op/fake implementation and the owning task wires the real one into 
 **Accept when** on the device:
 - With the screen off and locked, the alarm turns the screen on and shows the full-screen
   activity with sound and vibration.
-- With the alert slider on vibrate, sound still plays. On silent, there is no sound or vibration
-  but the screen is shown.
+- With the alert slider on vibrate, sound still plays. On silent, and with DND on, there is no
+  sound but the phone vibrates and the screen is shown.
 - Snooze, Took it and Done all stop the ringing and close the activity.
 - The ring times out after `alarmRingDuration`, through the engine.
 - The Snooze button is hidden when no snoozes are left.

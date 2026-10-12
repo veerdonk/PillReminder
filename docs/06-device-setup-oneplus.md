@@ -24,8 +24,11 @@ can only be done by hand.
    **Lock**. This stops "clear all" from killing it.
 8. **Turn off "Sleep standby optimisation"** if present: *Battery → More settings → Sleep standby
    optimisation → off*. Also turn off any "Deep optimisation" / "Advanced optimisation" for the app.
+9. **Do Not Disturb:** if the alarm doesn't vibrate or show while DND is on (test M14b), go to
+   *Settings → Sound & vibration → Do Not Disturb* and allow **Alarms**, or add PillReminder
+   under *Apps* exceptions.
 
 **Verify:** run Settings → **Test alarm**. Then lock the phone and wait for a 1-minute test
 escalation. The screen should turn on with the alarm.
 
-**After an OxygenOS update,** re-check steps 5–8, because updates sometimes reset them.
+**After an OxygenOS update,** re-check steps 5–9, because updates sometimes reset them.
