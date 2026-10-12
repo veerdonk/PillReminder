@@ -259,3 +259,7 @@ The on-device checks above are still open for the owner.*
   install from unknown sources, run Setup.
 
 **Accept when:** all manual test cases pass, or have documented follow-up issues the owner has accepted.
+
+*In progress 2026-10-12. The owner reports every manual case passing except M1 and M24 (wake
+detection), which need a real morning; results are in `docs/test-results.md`. README has the
+install and Setup steps. Mark `[x]` once M1/M24 pass.*
