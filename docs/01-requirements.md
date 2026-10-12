@@ -262,7 +262,7 @@ Open:
   as they are until the next save, which overwrites them. An unreadable settings file is also
   read as defaults. `SettingsRepository.update` throws `IllegalArgumentException` for invalid
   settings and writes nothing.
-- **A13** (T6) Detection and rollover in one Tick. 02 §6 runs detection when the *loaded*
+- **A13 ✓** (T6) Detection and rollover in one Tick. 02 §6 runs detection when the *loaded*
   state is DETECTING. If that state is about to roll over (the phone was off past
   `dayRolloverTime`), its window belongs to the old day, and the engine ignores `wakeDetected`
   on the fresh day anyway. So the controller only treats the state as "in DETECTING" when its
