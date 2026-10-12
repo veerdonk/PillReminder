@@ -101,10 +101,12 @@ class ReminderController(
         val ringing = outputs.ringing
         if (ringing == null) {
             ringController.ensureStopped()
-            // While ringing the ring service owns notification 1001, so leave it alone.
             val reminder = outputs.reminder
             if (reminder != null) notifier.showReminder(reminder) else notifier.cancelReminder()
         } else {
+            // The alarm has its own notification ID; remove the reminder so only one pill
+            // notification is visible (design §7, 01 A26).
+            notifier.cancelReminder()
             ringController.ensureRinging(ringing)
         }
         alarmScheduler.schedule(outputs.nextWakeAt, userVisible = state.phase in USER_VISIBLE_PHASES)

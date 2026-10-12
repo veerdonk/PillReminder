@@ -12,8 +12,10 @@ import nl.veerdonk.pillreminder.core.model.ReminderSubtitle
 import nl.veerdonk.pillreminder.core.model.RingSpec
 import nl.veerdonk.pillreminder.platform.receivers.ActionReceiver
 import nl.veerdonk.pillreminder.ui.MainActivity
+import nl.veerdonk.pillreminder.ui.alarm.AlarmActivity
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -141,6 +143,21 @@ class AndroidNotifierTest {
     }
 
     @Test
+    fun `a reminder after a ring is posted silently, a fresh one alerts`() {
+        notifier.showReminder(reminder(dose = 1))
+        assertEquals(Notification.GROUP_ALERT_ALL, posted().groupAlertBehavior)
+        assertEquals(null, posted().sound)
+
+        notifier.showReminder(reminder(dose = 1, subtitle = ReminderSubtitle.Snoozed(Instant.parse("2026-10-13T07:20:00Z"))))
+        assertEquals(Notification.GROUP_ALERT_SUMMARY, posted().groupAlertBehavior)
+    }
+
+    @Test
+    fun `the alarm has its own notification ID`() {
+        assertNotEquals(AndroidNotifier.NOTIFICATION_ID, AndroidNotifier.ALARM_NOTIFICATION_ID)
+    }
+
+    @Test
     fun `alarm stopped subtitle`() {
         notifier.showReminder(reminder(dose = 2, subtitle = ReminderSubtitle.AlarmStopped))
 
@@ -192,8 +209,7 @@ class AndroidNotifierTest {
         assertEquals("Time for pill 2 of 3", n.title)
         val fullScreen = shadowOf(n.fullScreenIntent)
         assertTrue(fullScreen.isActivity)
-        // MainActivity until T8 adds AlarmActivity.
-        assertEquals(MainActivity::class.java.name, fullScreen.savedIntent.component?.className)
+        assertEquals(AlarmActivity::class.java.name, fullScreen.savedIntent.component?.className)
         assertEquals(n.fullScreenIntent, n.contentIntent)
     }
 

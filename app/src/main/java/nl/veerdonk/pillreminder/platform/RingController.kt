@@ -11,8 +11,14 @@ interface RingController {
     fun ensureStopped()
 }
 
-/** Placeholder until T8 wires the ring service: never rings. */
-object NoOpRingController : RingController {
-    override fun ensureRinging(spec: RingSpec) = Unit
-    override fun ensureStopped() = Unit
+/**
+ * The Settings "Test alarm" hook (design §8): rings for 10 s without touching the day state.
+ * Reached as `AppContainer.testAlarm`.
+ */
+interface TestAlarm {
+    /** Rings the alarm (sound, vibration, AlarmActivity) for 10 seconds. */
+    fun startTestAlarm()
+
+    /** Ends a running test alarm early. Does nothing when no test alarm is ringing. */
+    fun stopTestAlarm()
 }

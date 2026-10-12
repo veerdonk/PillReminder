@@ -299,3 +299,65 @@ Open:
 - **A21** (T7) Without the notification permission, `showReminder` posts nothing and doesn't
   fail, and the state still advances. The setup checklist (T11) and
   the Home banner (FR-6.3) are where a missing permission is surfaced.
+- **A22** (T8) The Settings "Test alarm" rings with the current sound settings and the normal
+  quiet rules (silent/DND: vibration only) for 10 s. Its notification has no buttons (the real
+  ones would act on a dose that doesn't exist), and its screen shows "Test alarm" above a sample
+  "Pill 1 of M" with all three buttons, which only close it. The engine's `ensureStopped` never
+  stops a test alarm, and a test is ignored while a real alarm rings.
+- **A23** (T8) AlarmActivity shows only what `Engine.outputs` says rings for the dose it was
+  opened for. Opened for a dose that no longer rings (an old notification tap), it closes at once.
+  It runs in its own task (`taskAffinity=""`), so closing it never exposes the main app.
+- **A24** (T8) If the chosen alarm sound can't be played (e.g. the file was removed), the service
+  tries the default alarm sound, then the default ringtone. If none plays, the alarm still
+  vibrates and shows the screen.
+- **A25** (T8) The ring service's own safety stop (`alarmRingDuration` + 1 min) only matters if
+  the engine's `ringEndAt` wake-up is lost. It stops the sound but leaves the state to the next Tick.
+- **A26** (T8) The alarm notification has its own ID (1002; the reminder keeps 1001). With one
+  shared ID, `ensureStopped()` followed at once by the reminder's post raced: the system cancels
+  a stopped foreground service's notification by ID, asynchronously, and removed the new
+  reminder. After a ring timeout the "Snoozed until" notification could vanish, and in
+  PENDING_SILENT the ongoing reminder was gone until the next Tick, breaking FR-3.6. While
+  ringing, the controller now cancels the reminder before `ensureRinging`, so one pill
+  notification is visible at a time. The reminder after a ring (SNOOZED, PENDING_SILENT, entered
+  only from RINGING) is posted silent, so there is no second buzz right after the alarm.
+- **A30** (T9) The detection log is not persisted: `AndroidWakeDetector` keeps only the last
+  check in memory (`StateFlow<DetectionLogEntry?>`, plus logcat tag `WakeDetect`). After a process
+  restart it is empty until the next check. A check without Usage Access is logged as "Usage access
+  missing" and counts as not awake.
+- **A31** (T9) Usage Access is checked with `AppOpsManager.unsafeCheckOpNoThrow` on every call, and
+  the default launcher is resolved on every call, so a change in either takes effect on the next
+  poll. If no launcher resolves, only this app and `com.android.systemui` are excluded.
+- **A40** (T11) The Home banner counts every checklist item, including the soft ones and the
+  manual OnePlus box, so it stays until the owner has ticked or fixed everything. It is red when a
+  hard requirement (notifications, exact alarms) is missing, and calmer otherwise.
+- **A41** (T11) "Setup seen" is set when the user taps Continue on the Setup screen, not when
+  the screen is first shown. Setup opens at app start (not mid-session) if it was never seen or a
+  hard requirement is missing; the Home banner is the way back in at other times. Continue is
+  always enabled, so a hard requirement can be skipped (the banner then stays red).
+- **A42** (T11) The "I've done this" box and "setup seen" are kept in a small SharedPreferences
+  file (`setup_prefs`), not in `Settings`, since they are UI state and not part of the core model.
+- **A43** (T11) The manifest declares PACKAGE_USAGE_STATS (design §9 lists it; shared with T9) so the app
+  shows up under Usage access. T9 reads the log. The battery-optimisation dialog is lint's
+  `BatteryLife`, suppressed because the app is sideloaded.
+- **A50** (T10) A time picked for "Took pill N at…" is a time of day, mapped to the current app-day
+  (`dayIdOf(now)`): on that calendar date, or the next date when it is before `dayRolloverTime`
+  (so 01:30 after midnight belongs to the previous evening's day). The check in FR-5.2 is on the
+  resulting instant, so an early-morning pick during the evening is "in the future".
+- **A51** (T10) Home shows a stored state from an older app-day as its rolled-over successor
+  (`Engine.reduce(Tick)` in memory) until the real rollover Tick runs. The Home model is
+  re-evaluated every 15 s, so relative times ("Alarm in 6 min") stay fresh within that.
+- **A52** (T10) "Upcoming at ~HH:MM" is only shown while WAITING (last taken time + `doseInterval`,
+  plus one interval per later dose). Before dose 1 the time isn't predictable, so it reads "upcoming"
+  and the detection line gives the window. Inline Settings errors for out-of-range values show the
+  English message from `Settings.validate()` in `:core`; only the "enter a whole number" error is
+  in `strings.xml`.
+- **A53** (T10) The Detection log is shown when the app is debuggable (`FLAG_DEBUGGABLE`), so no
+  `buildConfig` feature is needed.
+- **A54** (T10) Settings has an explicit Save (top bar), disabled while invalid or unchanged.
+  "Reset to defaults" asks for confirmation and then saves the defaults at once. A picked alarm
+  sound equal to the system default alarm is stored as `null`.
+- **A55** (T10) History shows today's doses without a row as pending (the active dose) or upcoming,
+  and adds the in-progress dose's snoozes (only on the live state) to today's snooze count.
+- **A56** (T10) "Remind me now" is offered only where the engine accepts it (BEFORE_WINDOW,
+  DETECTING, WAITING, PENDING_SILENT), not while a reminder or alarm is already active. "Took
+  pill N" and "Not today"/"I'm done for today" are offered in every phase except DONE.

@@ -20,13 +20,17 @@ import nl.veerdonk.pillreminder.core.model.ReminderSubtitle
 import nl.veerdonk.pillreminder.core.model.RingSpec
 import nl.veerdonk.pillreminder.platform.receivers.ActionReceiver
 import nl.veerdonk.pillreminder.ui.MainActivity
+import nl.veerdonk.pillreminder.ui.alarm.AlarmActivity
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 /**
  * [Notifier] on the system notification manager (docs/03-technical-design.md §7). The reminder
- * and the alarm share [NOTIFICATION_ID], so at most one pill notification is ever visible.
+ * use [NOTIFICATION_ID]; the alarm (the ring service's foreground notification) uses
+ * [ALARM_NOTIFICATION_ID]. They are separate because the system removes a foreground service's
+ * notification by ID, asynchronously, after the service stops, which would also remove a
+ * reminder re-posted on the same ID. The controller keeps at most one visible (01 A26).
  *
  * Posting is skipped when POST_NOTIFICATIONS isn't granted; the setup checklist (T11) asks
  * for it. [zone] is read on every post, so "Snoozed until" follows a time zone change.
@@ -77,7 +81,10 @@ class AndroidNotifier(
         addDecisionActions(builder, spec.dayId, spec.dose, DoseSource.NOTIFICATION)
         spec.subtitle?.let { subtitle ->
             val line = subtitleText(subtitle)
-            builder.setSubText(line)
+            // A subtitle only exists right after a ring (SNOOZED, PENDING_SILENT): the alarm just
+            // alerted, so this re-post stays silent (01 A26).
+            builder.setSilent(true)
+                .setSubText(line)
                 .setStyle(NotificationCompat.BigTextStyle().bigText("$line\n${context.getString(R.string.notification_text)}"))
         }
         post(builder.build())
@@ -162,14 +169,14 @@ class AndroidNotifier(
         const val CHANNEL_REMINDERS = "reminders_v1"
         const val CHANNEL_ALARM = "alarm_v1"
 
-        /** Shared by the reminder and the alarm (the ring service's foreground notification). */
+        /** The reminder notification. */
         const val NOTIFICATION_ID = 1001
 
-        /**
-         * Full-screen and content target of the alarm notification.
-         * T8: replace with `AlarmActivity::class.java` once it exists.
-         */
-        private val ALARM_SCREEN: Class<out Activity> = MainActivity::class.java
+        /** The alarm: the ring service's foreground notification. */
+        const val ALARM_NOTIFICATION_ID = 1002
+
+        /** Full-screen and content target of the alarm notification. */
+        private val ALARM_SCREEN: Class<out Activity> = AlarmActivity::class.java
 
         private const val REQUEST_CONTENT = 100
         private const val REQUEST_ALARM_SCREEN = 101

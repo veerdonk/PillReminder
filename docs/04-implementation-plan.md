@@ -24,10 +24,10 @@ Wave 5:  T12 integration hardening + manual test pass
 | T5 | Data layer (settings, state, history) | T2 | [x] |
 | T6 | Scheduler, receivers, ReminderController | T3, T5 | [x] |
 | T7 | Notifications + ActionReceiver | T2 | [x] |
-| T8 | Alarm ring service + AlarmActivity | T7 | [ ] |
-| T9 | UsageEventSource + AndroidWakeDetector | T4 | [ ] |
-| T10 | Main UI: Home, Record dose, History, Settings | T5, T6 | [ ] |
-| T11 | Setup checklist + PermissionChecker | T1 | [ ] |
+| T8 | Alarm ring service + AlarmActivity | T7 | [x] |
+| T9 | UsageEventSource + AndroidWakeDetector | T4 | [x] |
+| T10 | Main UI: Home, Record dose, History, Settings | T5, T6 | [x] |
+| T11 | Setup checklist + PermissionChecker | T1 | [x] |
 | T12 | Integration, hardening, manual test pass | all | [ ] |
 
 T6 integrates T7, T8 and T9 through their interfaces. If one of those isn't done yet,
@@ -139,7 +139,8 @@ Settings that fail `validate()` on read fall back to defaults (A12 in 01). Tests
 *Done 2026-10-12. `ReminderController` (controller/), `AndroidAlarmScheduler` and the receivers
 (platform/) are wired in `AppContainer`, with an app-scoped `appScope`. The `WakeDetector`,
 `Notifier` and `RingController` interfaces live in platform/ with no-op implementations
-(`NoOpWakeDetector`, `NoOpNotifier`, `NoOpRingController`) that T9, T7 and T8 replace.
+(`NoOpWakeDetector` (removed by T9), `NoOpNotifier`, `NoOpRingController`) that T9, T7 and T8 replace
+(all three have been).
 `handle(event, expectedDayId)` drops stale notification actions (design §4). Settings changes
 tick via `AppContainer.tickOnSettingsChange()`. Assumptions A13–A16 in 01. The reboot check on
 the device is still open for the owner.*
@@ -175,6 +176,16 @@ AlarmActivity. Assumptions A17–A21 in 01. The on-device checks above are still
 - The ring times out after `alarmRingDuration`, through the engine.
 - The Snooze button is hidden when no snoozes are left.
 
+*Done 2026-10-12. `AndroidRingController` (platform/) replaces `NoOpRingController`; it starts
+`AlarmRingService`, which does sound, vibration, the wake lock and the notification as in design
+§8. `AlarmActivity` (ui/alarm/) is the full-screen alarm, and `AndroidNotifier.ALARM_SCREEN` now
+points to it. The pure decisions are in `platform/RingLogic.kt` (`shouldPlaySound`, `ringChange`,
+`RingExtras`) and are unit tested. **Test alarm hook for T10:** `AppContainer.testAlarm`
+(`TestAlarm.startTestAlarm()` / `stopTestAlarm()`, implemented by `AndroidRingController`). It
+rings 10 s and doesn't touch the state. Adds the FOREGROUND_SERVICE, FOREGROUND_SERVICE_SYSTEM_EXEMPTED,
+WAKE_LOCK and VIBRATE permissions. Assumptions A22–A26 in 01 (A26: the alarm notification has its own ID 1002). The on-device checks above, and the
+vibration-under-DND check from design §8, are still open for the owner.*
+
 ## T9 — UsageEventSource + AndroidWakeDetector
 **Do:** implement design §6 (Android side). Returns false when Usage Access is missing.
 Map raw events exactly as in the §6 table; `ACTIVITY_STOPPED` is dropped. Call
@@ -186,6 +197,15 @@ Map raw events exactly as in the §6 table; `ACTIVITY_STOPPED` is dropped. Call
 - On the device, unlocking twice within the window triggers dose 1 within one poll interval.
 - A unit test of the raw-event mapping (a pure function from event type to `UsageEvt.Type?`)
   shows `ACTIVITY_STOPPED` and unknown types are dropped.
+
+*Done 2026-10-12. `UsageEventSource` (`mapEventType` is the pure mapping) and
+`AndroidWakeDetector` replace `NoOpWakeDetector`, which is removed. Adds PACKAGE_USAGE_STATS and a
+`<queries>` entry for the HOME intent (launcher lookup on API 30+). Each check is logged under tag
+`WakeDetect` and kept as a `DetectionLogEntry` (from, to, `WakeCheck?`; null check = Usage Access
+missing). **For T10:** `AppContainer.detectionLog: StateFlow<DetectionLogEntry?>` holds the last
+check (null before the first); render `entry.describe()` as monospace text at the bottom of
+Settings → Advanced, in debug builds only. Assumptions A30–A31 in 01. The on-device check
+(two unlocks within the window triggers dose 1 within one poll) is still open for the owner.*
 
 ## T10 — Main UI
 **Do:** Home (FR-6 and the Record-dose section FR-5), History (FR-7) and Settings (FR-8),
@@ -201,6 +221,15 @@ actions through `ReminderController`.
 - History shows today live and past days after rollover.
 - The UI works in both light and dark theme.
 
+*Done 2026-10-12. `ui/home`, `ui/history` and `ui/settings` each have a ViewModel (built by
+`AppViewModelFactory` from `AppContainer`, using `lifecycle-viewmodel-compose`, already pulled in by
+navigation-compose) and a screen; the pure parts are `HomeModel.kt` (dose rows, next-action line,
+visible actions per phase, backdate mapping and validation), `HistoryModel.kt` and `SettingsForm.kt`,
+all unit tested. User actions go through `reminderController.handle` on `appScope`. Routes: home,
+history, settings, setup, oneplus_guide. "Test alarm" calls `container.testAlarm.startTestAlarm()`.
+Assumptions A50-A56 in 01. On-device checks (both themes, ringtone picker, Test alarm, the
+escalationDelay change moving the "Alarm in N min" line) remain for the owner.*
+
 ## T11 — Setup checklist + PermissionChecker
 **Do:**
 - `PermissionChecker` and the Setup screen (design §9).
@@ -210,6 +239,15 @@ actions through `ReminderController`.
 **Accept when:**
 - Each row shows live status (re-checked on resume) and its button opens the right system screen.
 - The setup screen shows on first launch and when a hard requirement is missing.
+
+*Done 2026-10-12. `PermissionChecker`/`AndroidPermissionChecker` (platform/PermissionChecker.kt)
+do the checks and fix intents; the pure rules (missing items, hard vs soft, setup-needed, banner)
+are in `SetupStatus` (platform/SetupStatus.kt). `SetupScreen`, `OnePlusGuideScreen` and the reusable
+`PermissionBanner(status, onOpenSetup)` plus `rememberSetupStatus(checker)` live in `ui/setup/`.
+T10 adds the banner at the top of Home and keeps the "setup"/"oneplus_guide" routes that
+MainActivity now defines with a minimal NavHost (`Routes`). Adds navigation-compose and the
+PACKAGE_USAGE_STATS and REQUEST_IGNORE_BATTERY_OPTIMIZATIONS permissions. Assumptions A40-A43 in 01.
+The on-device checks above are still open for the owner.*
 
 ## T12 — Integration, hardening, manual test pass
 **Do:**
@@ -221,3 +259,7 @@ actions through `ReminderController`.
   install from unknown sources, run Setup.
 
 **Accept when:** all manual test cases pass, or have documented follow-up issues the owner has accepted.
+
+*In progress 2026-10-12. The owner reports every manual case passing except M1 and M24 (wake
+detection), which need a real morning; results are in `docs/test-results.md`. README has the
+install and Setup steps. Mark `[x]` once M1/M24 pass.*

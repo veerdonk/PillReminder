@@ -236,17 +236,17 @@ class ReminderControllerTest {
     // --- apply order ---
 
     @Test
-    fun `while ringing apply starts ringing then schedules, and leaves the reminder alone`() = runTest {
+    fun `while ringing apply cancels the reminder, then starts ringing, then schedules`() = runTest {
         val h = harness(reminder, t("07:40"))
         h.controller.tick()
 
         assertEquals(Phase.RINGING, h.state.phase)
         val calls = h.platformCalls()
-        assertEquals(listOf("EnsureRinging", "Schedule"), calls.map { it.name })
-        val ring = (calls[0] as Call.EnsureRinging).spec
+        assertEquals(listOf("CancelReminder", "EnsureRinging", "Schedule"), calls.map { it.name })
+        val ring = (calls[1] as Call.EnsureRinging).spec
         assertEquals(day, ring.dayId)
         assertEquals(1, ring.dose)
-        assertEquals(Call.Schedule(t("07:42"), userVisible = true), calls[1])
+        assertEquals(Call.Schedule(t("07:42"), userVisible = true), calls[2])
     }
 
     @Test
