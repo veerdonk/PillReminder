@@ -172,4 +172,5 @@
     <string name="settings_detection_log">Detection log (debug)</string>
     <string name="settings_detection_log_empty">No check yet.</string>
     <string name="settings_navigation_status">Maps navigation</string>
+    <string name="settings_open_setup">Setup checklist</string>
 </resources>

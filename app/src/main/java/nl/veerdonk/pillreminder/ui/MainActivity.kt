@@ -85,6 +85,7 @@ private fun AppNavHost(container: AppContainer, startDestination: String) {
                 detectionLog = container.detectionLog,
                 navigationStatus = container.navigationDetector.status,
                 onTestAlarm = { container.testAlarm.startTestAlarm() },
+                onOpenSetup = { navController.navigate(Routes.SETUP) },
                 onBack = { navController.popBackStack() },
             )
         }

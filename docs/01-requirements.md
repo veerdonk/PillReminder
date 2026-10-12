@@ -182,6 +182,8 @@ alarms are recomputed where the spec defines them in terms of the setting (see s
   - battery optimisation exemption,
   - notification access, optional, for FR-3.8 (it never raises the Home banner),
   - a link to the OnePlus-specific steps.
+
+  After the first launch, Settings → Advanced → "Setup checklist" opens it again.
 - **FR-9.2** The schedule must survive a phone reboot, an app update, a time change and a
   timezone change. A pending reminder must be re-shown, and the pending alarm or timer re-armed
   (or fired at once if overdue).

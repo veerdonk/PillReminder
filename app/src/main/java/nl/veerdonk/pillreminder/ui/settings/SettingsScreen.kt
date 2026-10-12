@@ -61,6 +61,7 @@ fun SettingsScreen(
     detectionLog: StateFlow<DetectionLogEntry?>,
     navigationStatus: StateFlow<NavigationStatus>,
     onTestAlarm: () -> Unit,
+    onOpenSetup: () -> Unit,
     onBack: () -> Unit,
 ) {
     val form = viewModel.form
@@ -151,6 +152,11 @@ fun SettingsScreen(
                 }
                 TimeField(R.string.setting_rollover, form.rollover, errors[SettingsField.ROLLOVER]) { t ->
                     viewModel.edit { it.copy(rollover = t) }
+                }
+                // Setup only opens by itself on first launch; this reaches it later, e.g. for the
+                // optional rows (FR-9.1).
+                OutlinedButton(onClick = onOpenSetup, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.settings_open_setup))
                 }
                 OutlinedButton(onClick = { confirmReset = true }, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.settings_reset))

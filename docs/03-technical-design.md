@@ -411,7 +411,7 @@ type isn't enforced at runtime, but `targetSdk ≥ 34` requires it in the manife
   per dose (✓ 07:52 · ✓ 11:50 · ✗ skipped · ! missed), plus the snooze count.
 - **Settings:** grouped into Wake detection (weekday/weekend times and detection thresholds),
   Doses (count, interval), Alarm (first alarm waits for fallback switch, escalation, snooze duration, max snoozes, ring duration, sound,
-  Test alarm), and Advanced (poll interval, day rollover, Reset to defaults).
+  Test alarm), and Advanced (poll interval, day rollover, Setup checklist, Reset to defaults).
   - Durations use number fields in minutes; the interval uses an hours + minutes pair.
   - Validation errors are shown inline, and Save is disabled while any field is invalid.
 - **Setup:** the checklist from §9. It is shown automatically on first launch, and also while any
