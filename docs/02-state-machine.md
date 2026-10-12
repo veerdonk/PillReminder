@@ -27,6 +27,7 @@ enum class Phase {
     REMINDER,        // dose N reminder notification visible, escalation timer running
     RINGING,         // dose N alarm ringing
     SNOOZED,         // dose N alarm snoozed
+    HELD_DRIVING,    // dose N alarm due, held while Google Maps navigates (01 FR-3.8)
     PENDING_SILENT,  // dose N: snoozes exhausted, ongoing notification only, no more alarms
     DONE             // all doses taken, or rest of day skipped
 }
@@ -94,6 +95,12 @@ stateDiagram-v2
     RINGING --> SNOOZED: Snooze / ring timeout (canSnooze)
     RINGING --> PENDING_SILENT: ring timeout (!canSnooze)
     SNOOZED --> RINGING: now ≥ snoozeEndAt
+    REMINDER --> HELD_DRIVING: now ≥ escalateAt, navigating
+    SNOOZED --> HELD_DRIVING: now ≥ snoozeEndAt, navigating
+    RINGING --> HELD_DRIVING: navigating
+    HELD_DRIVING --> RINGING: not navigating
+    HELD_DRIVING --> WAITING: TookDose (N < M)
+    HELD_DRIVING --> DONE: TookDose (N = M) / SkipRest
     PENDING_SILENT --> REMINDER: RemindNow
 
     REMINDER --> WAITING: TookDose (N < M)
@@ -119,7 +126,7 @@ diagram for every phase except DONE.
 
 ```kotlin
 sealed interface Event {
-    data class Tick(val wakeDetected: Boolean) : Event   // wakeDetected only meaningful in DETECTING
+    data class Tick(val wakeDetected: Boolean, val navigating: Boolean = false) : Event   // wakeDetected only meaningful in DETECTING
     data class TookDose(val dose: Int, val at: Instant, val source: DoseSource) : Event
     data class SkipRest(val dose: Int) : Event
     data class Snooze(val dose: Int) : Event
@@ -131,6 +138,9 @@ data class Transition(val state: DayState, val finishedDay: DayState?)  // finis
 
 fun reduce(state: DayState, event: Event, s: Settings, now: Instant, zone: ZoneId): Transition
 ```
+
+**The orchestrator fills `navigating` from the `NavigationDetector` on every Tick** (a cheap
+in-memory check, 01 FR-3.8). User events ignore it.
 
 **The orchestrator gets `wakeDetected` from the `WakeDetector`.** It calls the detector only when
 the persisted phase is `DETECTING`. A `BEFORE_WINDOW → DETECTING` change happens inside the same
@@ -149,10 +159,15 @@ was not run, it runs detection and ticks once more. The engine itself never does
 | DETECTING | `wakeDetected` | REMINDER | `wakeAt = now`, `wakeSource = DETECTED`, `reminderShownAt = now`, `firstRemindedAt = now` |
 | DETECTING | `now ≥ fallbackAt(dayId)` | REMINDER | Same, but `wakeSource = FALLBACK` |
 | WAITING | `now ≥ dueAt` | REMINDER | `reminderShownAt = now`, `firstRemindedAt = now` |
+| REMINDER | `now ≥ escalateAt` and `navigating` | HELD_DRIVING | none |
 | REMINDER | `now ≥ escalateAt` | RINGING | `ringingSince = now` |
+| RINGING | `navigating` (checked first) | HELD_DRIVING | `ringingSince = null`; no snooze used |
 | RINGING | `now ≥ ringEndAt` and `canSnooze` | SNOOZED | `snoozedAt = now`, `snoozesUsed += 1` |
 | RINGING | `now ≥ ringEndAt` and `!canSnooze` | PENDING_SILENT | `ringingSince = null` |
+| SNOOZED | `now ≥ snoozeEndAt` and `navigating` | HELD_DRIVING | none |
 | SNOOZED | `now ≥ snoozeEndAt` | RINGING | `ringingSince = now` |
+| HELD_DRIVING | `navigating` | unchanged | — |
+| HELD_DRIVING | not `navigating` | RINGING | `ringingSince = now` |
 | PENDING_SILENT, DONE | — | unchanged | — |
 
 `wakeDetected` only counts if the phase was already DETECTING when the event arrived; it is
@@ -199,6 +214,7 @@ data class ReminderSpec(val dayId: LocalDate, val dose: Int, val doseCount: Int,
 sealed interface ReminderSubtitle {                 // worded by :app from strings.xml (A9)
     data class Snoozed(val until: Instant) : ReminderSubtitle   // "Snoozed until HH:MM", device zone
     data object AlarmStopped : ReminderSubtitle                  // "Alarm stopped — please take your pill"
+    data object HeldWhileDriving : ReminderSubtitle              // "Alarm held while you drive"
 }
 data class RingSpec(val dayId: LocalDate, val dose: Int, val doseCount: Int, val canSnooze: Boolean, val snoozesLeft: Int)
 
@@ -213,6 +229,7 @@ fun outputs(state: DayState, s: Settings, now: Instant, zone: ZoneId): Outputs
 | REMINDER | normal style | null | `escalateAt` |
 | RINGING | alarm style (with Snooze if `canSnooze`) | RingSpec | `ringEndAt` |
 | SNOOZED | normal style, subtitle `Snoozed(snoozeEndAt)` ("Snoozed until HH:MM") | null | `snoozeEndAt` |
+| HELD_DRIVING | normal style, subtitle `HeldWhileDriving` ("Alarm held while you drive") | null | `now + 5 min` (`Engine.NAVIGATION_RECHECK_INTERVAL`, a backup re-check) |
 | PENDING_SILENT | normal style, subtitle `AlarmStopped` ("Alarm stopped — please take your pill") | null | `nextRolloverAt` |
 | DONE | null | null | `nextRolloverAt` |
 

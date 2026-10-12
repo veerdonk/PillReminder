@@ -83,6 +83,7 @@ private fun AppNavHost(container: AppContainer, startDestination: String) {
             SettingsScreen(
                 viewModel = viewModel<SettingsViewModel>(factory = factory),
                 detectionLog = container.detectionLog,
+                navigationStatus = container.navigationDetector.status,
                 onTestAlarm = { container.testAlarm.startTestAlarm() },
                 onBack = { navController.popBackStack() },
             )

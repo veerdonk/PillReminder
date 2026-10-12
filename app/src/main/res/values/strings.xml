@@ -10,6 +10,7 @@
     <string name="notification_text">Tap a button below once you\'ve decided.</string>
     <string name="notification_subtitle_snoozed">Snoozed until %1$s</string>
     <string name="notification_subtitle_alarm_stopped">Alarm stopped — please take your pill</string>
+    <string name="notification_subtitle_held_driving">Alarm held while you drive</string>
 
     <!-- Notification buttons -->
     <string name="action_took">I took my pill</string>
@@ -31,6 +32,7 @@
     <string name="setup_intro">Reminders only work reliably when these are set. Items marked Required must be on.</string>
     <string name="setup_required">Required</string>
     <string name="setup_recommended">Recommended</string>
+    <string name="setup_optional">Optional</string>
     <string name="setup_status_ok">Done</string>
     <string name="setup_status_missing">Not set</string>
     <string name="setup_button_grant">Fix</string>
@@ -48,6 +50,8 @@
     <string name="setup_item_battery_title">Battery optimisation</string>
     <string name="setup_item_battery_desc">Set to \"Don\'t optimise\" so the system doesn\'t stop the app in the background.</string>
     <string name="setup_item_oneplus_title">OnePlus extras</string>
+    <string name="setup_item_maps_title">Hold the alarm while driving</string>
+    <string name="setup_item_maps_desc">Notification access lets the app see when Google Maps is navigating. The alarm then waits until navigation ends. Only Maps\' notifications are looked at. If Android calls it a restricted setting, first open App info › ⋮ › Allow restricted settings.</string>
     <string name="setup_item_oneplus_desc">Auto-launch, lock in Recents and sleep standby. These can\'t be detected, so you tick them off yourself.</string>
 
     <!-- OnePlus guide (docs/06-device-setup-oneplus.md) -->
@@ -101,6 +105,7 @@
     <string name="next_ringing">Alarm ringing now</string>
     <string name="next_snoozed_until">Snoozed until %1$s</string>
     <string name="next_no_more_alarms">No more alarms for this dose</string>
+    <string name="next_held_driving">Alarm held while Maps is navigating</string>
     <string name="next_done_until">All quiet until the next day starts at %1$s</string>
     <string name="record_title">Record dose</string>
     <string name="record_took_now" tools:ignore="PluralsCandidate">Took pill %1$d now</string>
@@ -166,4 +171,5 @@
     <string name="settings_reset_action">Reset</string>
     <string name="settings_detection_log">Detection log (debug)</string>
     <string name="settings_detection_log_empty">No check yet.</string>
+    <string name="settings_navigation_status">Maps navigation</string>
 </resources>

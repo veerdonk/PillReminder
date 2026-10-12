@@ -61,6 +61,9 @@ sealed interface NextAction {
     /** SNOOZED until [until]. */
     data class SnoozedUntil(val until: Instant) : NextAction
 
+    /** HELD_DRIVING: the alarm rings once Google Maps stops navigating (FR-3.8). */
+    data object HeldWhileDriving : NextAction
+
     /** PENDING_SILENT: no more alarms for this dose. */
     data object NoMoreAlarms : NextAction
 
@@ -90,7 +93,8 @@ data class HomeModel(
     val actions: HomeActions,
 )
 
-private val REMINDER_PHASES = setOf(Phase.REMINDER, Phase.RINGING, Phase.SNOOZED, Phase.PENDING_SILENT)
+private val REMINDER_PHASES =
+    setOf(Phase.REMINDER, Phase.RINGING, Phase.SNOOZED, Phase.HELD_DRIVING, Phase.PENDING_SILENT)
 private val REMIND_NOW_PHASES = setOf(Phase.BEFORE_WINDOW, Phase.DETECTING, Phase.WAITING, Phase.PENDING_SILENT)
 
 /** True while a reminder or alarm for the next dose is active. */
@@ -170,6 +174,7 @@ fun nextAction(state: DayState, settings: Settings, now: Instant, zone: ZoneId):
         }
         Phase.RINGING -> NextAction.Ringing
         Phase.SNOOZED -> NextAction.SnoozedUntil(outputs.nextWakeAt)
+        Phase.HELD_DRIVING -> NextAction.HeldWhileDriving
         Phase.PENDING_SILENT -> NextAction.NoMoreAlarms
         Phase.DONE -> NextAction.DoneUntil(TimeMath.nextRolloverAt(state.dayId, settings, zone))
     }

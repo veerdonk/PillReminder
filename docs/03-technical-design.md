@@ -54,6 +54,10 @@ without the Android SDK.
       AlarmRingService.kt       Foreground service: sound + vibration + wake lock (§8)
       UsageEventSource.kt       UsageStatsManager -> List<UsageEvt> (§6)
       AndroidWakeDetector.kt    UsageEventSource + WakeRule
+      NavigationDetector.kt     Is Google Maps navigating? (§6a)
+      MapsNavigation.kt         Pure rule: NotificationFacts -> navigation?, NavigationStatus
+      AndroidNavigationDetector.kt  NavigationStatus holder; ticks when navigation starts/ends
+      MapsNavigationListener.kt NotificationListenerService feeding AndroidNavigationDetector
       PermissionChecker.kt      Status of each required permission/setting (§9)
       receivers/
         WakeupReceiver.kt       AlarmManager fires -> controller.handle(Tick)
@@ -155,6 +159,7 @@ data class WakeCheck(val unlocks: Int, val foregroundTime: Duration, val awake: 
 
 // :app
 interface WakeDetector { suspend fun isAwake(from: Instant, to: Instant, settings: Settings): Boolean }
+interface NavigationDetector { fun isNavigating(): Boolean }   // false when it can't tell (§6a)
 interface AlarmScheduler { fun schedule(at: Instant, userVisible: Boolean); fun cancel() }
 interface Notifier {
     fun ensureChannels()
@@ -175,7 +180,7 @@ class ReminderController(/* all of the above + Clock + zone: () -> ZoneId */) {
     // see 02 §6. With expectedDayId set (notification actions, §7), the event is dropped unless
     // it equals the dayId after the rollover check, i.e. dayIdOf(now) (01 A15).
     suspend fun handle(event: Event, expectedDayId: LocalDate? = null)
-    suspend fun tick() = handle(Event.Tick(false))   // wakeDetected filled in internally
+    suspend fun tick() = handle(Event.Tick(false))   // wakeDetected and navigating filled in internally
 }
 ```
 
@@ -192,7 +197,7 @@ on every call. Both are injected into the controller, so tests can fix them.
   side effect is that Android shows the alarm icon and "next alarm" for these times, which is
   acceptable. Its show-intent opens `MainActivity`.
 - **Everything else uses `setExactAndAllowWhileIdle(RTC_WAKEUP, ...)`.** That covers
-  BEFORE_WINDOW, DETECTING polls, PENDING_SILENT and DONE. During deep Doze these may be stretched
+  BEFORE_WINDOW, DETECTING polls, HELD_DRIVING re-checks, PENDING_SILENT and DONE. During deep Doze these may be stretched
   to about 9 minutes, which is fine because I'm asleep then.
 - **Permission:** declare `USE_EXACT_ALARM`. It is auto-granted on API 33+, and the app is
   sideloaded, so Play policy doesn't apply. Still check `canScheduleExactAlarms()` in the
@@ -250,6 +255,23 @@ correctly.
 Cases the steps above leave open (double RESUMED, SCREEN_OFF, a repeated PAUSED, equal timestamps)
 are handled as in 01-requirements A11. `WakeCheck` always reports both `unlocks` and `fgTime`,
 even when rule (a) alone decides the result.
+
+## 6a. Navigation detection (01 FR-3.8)
+
+`MapsNavigationListener` is a `NotificationListenerService` (manifest: exported, protected by
+`BIND_NOTIFICATION_LISTENER_SERVICE`). The system binds it once the user grants notification
+access; there is no foreground service. It only looks at notifications from
+`com.google.android.apps.maps` and keeps, in `AndroidNavigationDetector`, a `NavigationStatus`:
+whether it is bound, the keys of active navigation notifications, and a description of every
+ongoing Maps notification. `MapsNavigation.isNavigation` decides (01 A58): ongoing, and category
+`navigation` or a channel ID containing "navigation".
+
+- `isNavigating()` = bound and at least one navigation notification active. Unbound means false.
+- When `isNavigating()` changes, the detector launches `controller.tick()` on the app scope, so
+  a held alarm rings as soon as navigation ends and a ringing alarm stops when it starts. Maps
+  re-posts its notification often; only a change in the result ticks.
+- While HELD_DRIVING, the engine also wakes every 5 min as a backup.
+- Settings → Advanced shows `NavigationStatus.describe()` in every build, to confirm the rule.
 
 ## 7. Notifications
 
@@ -371,6 +393,7 @@ type isn't enforced at runtime, but `targetSdk ≥ 34` requires it in the manife
 | Exact alarms | `alarmManager.canScheduleExactAlarms()` | `ACTION_REQUEST_SCHEDULE_EXACT_ALARM` |
 | Full-screen intent | API ≥ 34: `notificationManager.canUseFullScreenIntent()`; else true | `ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT` (34+) |
 | Battery optimisation | `powerManager.isIgnoringBatteryOptimizations(pkg)` | `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` with `package:` URI |
+| Notification access (optional, §6a) | `NotificationManagerCompat.getEnabledListenerPackages()` contains the package | `ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS` for `MapsNavigationListener` |
 | OnePlus extras | Can't be detected; manual "I've done this" checkbox stored in prefs | Open app details settings, and show the steps from `06-device-setup-oneplus.md` |
 
 ## 10. UI overview

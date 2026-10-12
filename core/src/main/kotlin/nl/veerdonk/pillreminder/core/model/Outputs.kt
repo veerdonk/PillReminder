@@ -43,6 +43,11 @@ sealed interface ReminderSubtitle {
     @Serializable
     @SerialName("alarmStopped")
     data object AlarmStopped : ReminderSubtitle
+
+    /** "Alarm held while you drive" (HELD_DRIVING, FR-3.8). */
+    @Serializable
+    @SerialName("heldWhileDriving")
+    data object HeldWhileDriving : ReminderSubtitle
 }
 
 @Serializable

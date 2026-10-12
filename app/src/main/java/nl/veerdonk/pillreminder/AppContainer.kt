@@ -23,6 +23,7 @@ import nl.veerdonk.pillreminder.data.history.RoomHistoryRepository
 import nl.veerdonk.pillreminder.platform.AlarmScheduler
 import nl.veerdonk.pillreminder.platform.AndroidAlarmScheduler
 import nl.veerdonk.pillreminder.platform.AndroidNotifier
+import nl.veerdonk.pillreminder.platform.AndroidNavigationDetector
 import nl.veerdonk.pillreminder.platform.AndroidPermissionChecker
 import nl.veerdonk.pillreminder.platform.AndroidRingController
 import nl.veerdonk.pillreminder.platform.AndroidWakeDetector
@@ -97,13 +98,22 @@ class AppContainer(appContext: Context) {
     /** The last wake check, for the debug "Detection log" in Settings → Advanced (T10). */
     val detectionLog: StateFlow<DetectionLogEntry?> = androidWakeDetector.lastCheck
 
-    val reminderController = ReminderController(
+    /**
+     * Fed by `MapsNavigationListener` (FR-3.8). Navigation starting or ending ticks at once, so a
+     * held alarm rings as soon as navigation ends and a ringing one stops when it starts.
+     */
+    val navigationDetector: AndroidNavigationDetector = AndroidNavigationDetector(
+        onNavigationChanged = { appScope.launch { reminderController.tick() } },
+    )
+
+    val reminderController: ReminderController = ReminderController(
         clock = clock,
         zone = ZoneId::systemDefault,
         settingsRepository = settingsRepository,
         stateStore = stateStore,
         historyRepository = historyRepository,
         wakeDetector = wakeDetector,
+        navigationDetector = navigationDetector,
         notifier = notifier,
         ringController = ringController,
         alarmScheduler = alarmScheduler,

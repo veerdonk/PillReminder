@@ -29,6 +29,7 @@ Wave 5:  T12 integration hardening + manual test pass
 | T10 | Main UI: Home, Record dose, History, Settings | T5, T6 | [x] |
 | T11 | Setup checklist + PermissionChecker | T1 | [x] |
 | T12 | Integration, hardening, manual test pass | all | [ ] |
+| T13 | Hold the alarm while Maps navigates (FR-3.8) | T3, T6, T11 | [x] |
 
 T6 integrates T7, T8 and T9 through their interfaces. If one of those isn't done yet,
 T6 uses a no-op/fake implementation and the owning task wires the real one into `AppContainer`.
@@ -265,3 +266,18 @@ The on-device checks above are still open for the owner.*
 *In progress 2026-10-12. The owner reports every manual case passing except M1 and M24 (wake
 detection), which need a real morning; results are in `docs/test-results.md`. README has the
 install and Setup steps. Mark `[x]` once M1/M24 pass.*
+
+## T13 — Hold the alarm while Maps navigates
+**Do:**
+- Engine: `Tick.navigating` and the HELD_DRIVING phase (02 §4.2, §5), with a test per new row.
+- `NavigationDetector` + `MapsNavigationListener` (design §6a), wired into `ReminderController`.
+- Optional "notification access" row in the setup checklist; a live status in Settings → Advanced.
+
+**Accept when:**
+- Unit tests cover the new transitions and the Maps notification rule.
+- On the phone: with Maps navigating, a due alarm doesn't ring and the reminder says "Alarm held
+  while you drive"; when navigation ends it rings within seconds.
+
+*Done 2026-10-12 (owner request). Assumption A58 in 01. The on-device check above is open for
+the owner: Settings → Advanced → "Maps navigation" should say "navigating: yes" while Maps
+navigates. If it doesn't, the Maps lines there show what to match on instead.*

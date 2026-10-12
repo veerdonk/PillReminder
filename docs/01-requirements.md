@@ -89,6 +89,11 @@ settings to make the app reliable (see `06-device-setup-oneplus.md`).
   stops ringing and the **ongoing reminder notification stays** with its two buttons. No more
   ringing happens for that dose. The dose stays pending until I act or the day ends.
 - **FR-3.7** Snooze counts are per dose and reset for each new dose.
+- **FR-3.8** **No alarm while I drive.** While Google Maps is navigating, the alarm does not ring.
+  An alarm that comes due (escalation or snooze end) is held, and a ringing alarm stops. The
+  reminder notification stays, silently, with "Alarm held while you drive". Once navigation ends,
+  the alarm rings at once. Holding doesn't use up a snooze. This needs notification access
+  (optional in the setup checklist, FR-9.1); without it the alarm behaves as before (A58).
 
 ### FR-4 Dose sequence
 - **FR-4.1** **"I took my pill"** on dose N records dose N as taken at the moment of the tap.
@@ -175,6 +180,7 @@ alarms are recomputed where the spec defines them in terms of the setting (see s
   - exact alarms,
   - full-screen intent,
   - battery optimisation exemption,
+  - notification access, optional, for FR-3.8 (it never raises the Home banner),
   - a link to the OnePlus-specific steps.
 - **FR-9.2** The schedule must survive a phone reboot, an app update, a time change and a
   timezone change. A pending reminder must be re-shown, and the pending alarm or timer re-armed
@@ -376,3 +382,15 @@ Open:
   corrupt REMINDER whose `reminderShownAt` is repaired to `now` (A10) is no longer held: it
   rings after `escalationDelay` rather than risk staying silent. Doses 2 and later are unchanged. It is a switch in Settings → Alarm
   (`holdFirstAlarmUntilFallback`, default on); off restores the plain FR-3.1 behaviour.
+- **A58** (owner request) FR-3.8 detects navigation from Google Maps' ongoing notification,
+  read by a `NotificationListenerService` (design §6a). Maps has no API for this. A Maps
+  notification counts when it is ongoing and its category is `navigation` or its channel ID
+  contains "navigation"; Maps also posts other ongoing notifications (e.g. location sharing).
+  That rule is inferred, not documented by Google: Settings → Advanced → "Maps navigation" shows
+  what the listener sees, to confirm it on the phone. Other navigation apps (Waze) aren't
+  covered. When the app can't tell (no access, listener not bound), it treats it as "not
+  navigating", so the alarm rings: a missed hold is safer than a missed dose. A held alarm is
+  re-checked every 5 min as a backup to the listener's own Tick when navigation ends. The
+  listener is a system-bound service, not a foreground service (FR-9.3). On Android 13 a
+  sideloaded app's notification access is a "restricted setting": App info › ⋮ › Allow
+  restricted settings first.

@@ -47,6 +47,7 @@ private fun SetupItem.titleRes(): Int = when (this) {
     SetupItem.USAGE_ACCESS -> R.string.setup_item_usage_access_title
     SetupItem.FULL_SCREEN_INTENT -> R.string.setup_item_full_screen_title
     SetupItem.BATTERY_OPTIMISATION -> R.string.setup_item_battery_title
+    SetupItem.MAPS_NAVIGATION -> R.string.setup_item_maps_title
     SetupItem.ONEPLUS_EXTRAS -> R.string.setup_item_oneplus_title
 }
 
@@ -57,6 +58,7 @@ private fun SetupItem.descriptionRes(): Int = when (this) {
     SetupItem.USAGE_ACCESS -> R.string.setup_item_usage_access_desc
     SetupItem.FULL_SCREEN_INTENT -> R.string.setup_item_full_screen_desc
     SetupItem.BATTERY_OPTIMISATION -> R.string.setup_item_battery_desc
+    SetupItem.MAPS_NAVIGATION -> R.string.setup_item_maps_desc
     SetupItem.ONEPLUS_EXTRAS -> R.string.setup_item_oneplus_desc
 }
 
@@ -140,7 +142,13 @@ private fun SetupRow(item: SetupItem, ok: Boolean, onFix: () -> Unit) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(stringResource(item.titleRes()), style = MaterialTheme.typography.titleMedium)
                     Text(
-                        text = stringResource(if (item.hard) R.string.setup_required else R.string.setup_recommended),
+                        text = stringResource(
+                            when {
+                                item.hard -> R.string.setup_required
+                                item.optional -> R.string.setup_optional
+                                else -> R.string.setup_recommended
+                            },
+                        ),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

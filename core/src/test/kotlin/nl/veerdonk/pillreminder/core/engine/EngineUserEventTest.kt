@@ -260,8 +260,8 @@ class EngineUserEventTest {
     }
 
     @Test
-    fun `RemindNow is ignored in REMINDER, RINGING, SNOOZED and DONE`() {
-        for (phase in listOf(Phase.REMINDER, Phase.RINGING, Phase.SNOOZED, Phase.DONE)) {
+    fun `RemindNow is ignored in REMINDER, RINGING, SNOOZED, HELD_DRIVING and DONE`() {
+        for (phase in listOf(Phase.REMINDER, Phase.RINGING, Phase.SNOOZED, Phase.HELD_DRIVING, Phase.DONE)) {
             assertIgnored(stateIn(phase), Event.RemindNow, t("08:01"))
         }
     }
