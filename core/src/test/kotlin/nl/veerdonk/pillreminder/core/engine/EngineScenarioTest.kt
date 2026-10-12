@@ -36,43 +36,45 @@ class EngineScenarioTest {
         s = step(s, tickAwake, t("07:25"))
         assertEquals(Phase.REMINDER, s.phase)
         assertEquals(WakeSource.DETECTED, s.wakeSource)
-        assertEquals(t("07:40"), outputs(s, t("07:25")).nextWakeAt)
+        // Dose 1 waits for the fallback time before it rings.
+        assertEquals(t("10:30"), outputs(s, t("07:25")).nextWakeAt)
 
-        s = step(s, tick, t("07:40"))
+        s = step(s, tick, t("10:30"))
         assertEquals(Phase.RINGING, s.phase)
-        assertEquals(t("07:42"), outputs(s, t("07:40")).nextWakeAt)
+        assertEquals(t("10:32"), outputs(s, t("10:30")).nextWakeAt)
 
-        s = step(s, tick, t("07:42"))
+        s = step(s, tick, t("10:32"))
         assertEquals(Phase.SNOOZED, s.phase)
         assertEquals(1, s.snoozesUsed)
-        assertEquals(ReminderSubtitle.Snoozed(t("07:52")), outputs(s, t("07:42")).reminder!!.subtitle)
+        assertEquals(ReminderSubtitle.Snoozed(t("10:42")), outputs(s, t("10:32")).reminder!!.subtitle)
 
-        s = step(s, tick, t("07:52"))
+        s = step(s, tick, t("10:42"))
         assertEquals(Phase.RINGING, s.phase)
-        s = step(s, Event.TookDose(1, t("07:52"), DoseSource.ALARM), t("07:52"))
+        s = step(s, Event.TookDose(1, t("10:42"), DoseSource.ALARM), t("10:42"))
         assertEquals(Phase.WAITING, s.phase)
         assertEquals(2, s.nextDose)
-        assertEquals(t("11:42"), outputs(s, t("07:52")).nextWakeAt)
+        assertEquals(t("14:32"), outputs(s, t("10:42")).nextWakeAt)
 
-        s = step(s, tick, t("11:42"))
+        s = step(s, tick, t("14:32"))
         assertEquals(Phase.REMINDER, s.phase)
-        assertEquals(2, outputs(s, t("11:42")).reminder!!.dose)
+        assertEquals(2, outputs(s, t("14:32")).reminder!!.dose)
+        assertEquals(t("14:47"), outputs(s, t("14:32")).nextWakeAt)
 
-        s = step(s, Event.TookDose(2, t("11:50"), DoseSource.NOTIFICATION), t("11:50"))
+        s = step(s, Event.TookDose(2, t("14:40"), DoseSource.NOTIFICATION), t("14:40"))
         assertEquals(Phase.WAITING, s.phase)
-        assertEquals(t("15:40"), outputs(s, t("11:50")).nextWakeAt)
+        assertEquals(t("18:30"), outputs(s, t("14:40")).nextWakeAt)
 
-        s = step(s, tick, t("15:40"))
+        s = step(s, tick, t("18:30"))
         assertEquals(Phase.REMINDER, s.phase)
-        s = step(s, Event.TookDose(3, t("15:41"), DoseSource.NOTIFICATION), t("15:41"))
+        s = step(s, Event.TookDose(3, t("18:31"), DoseSource.NOTIFICATION), t("18:31"))
         assertEquals(Phase.DONE, s.phase)
-        assertEquals(at("${NEXT_DAY}T03:00"), outputs(s, t("15:41")).nextWakeAt)
+        assertEquals(at("${NEXT_DAY}T03:00"), outputs(s, t("18:31")).nextWakeAt)
 
         assertEquals(
             listOf(
-                DoseRecord(1, DoseStatus.TAKEN, t("07:52"), DoseSource.ALARM, 1, t("07:25")),
-                DoseRecord(2, DoseStatus.TAKEN, t("11:50"), DoseSource.NOTIFICATION, 0, t("11:42")),
-                DoseRecord(3, DoseStatus.TAKEN, t("15:41"), DoseSource.NOTIFICATION, 0, t("15:40")),
+                DoseRecord(1, DoseStatus.TAKEN, t("10:42"), DoseSource.ALARM, 1, t("07:25")),
+                DoseRecord(2, DoseStatus.TAKEN, t("14:40"), DoseSource.NOTIFICATION, 0, t("14:32")),
+                DoseRecord(3, DoseStatus.TAKEN, t("18:31"), DoseSource.NOTIFICATION, 0, t("18:30")),
             ),
             s.doses,
         )

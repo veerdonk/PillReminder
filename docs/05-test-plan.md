@@ -33,7 +33,8 @@ Use `adb shell dumpsys alarm | grep -A3 pillreminder` to check scheduled wake-up
 | M1 | Detection | Lock the phone. After earliest has passed, unlock twice within 2 min. | The dose 1 reminder appears within about 1 min. History shows wake source "detected". |
 | M2 | Fallback | Leave the phone untouched past earliest until fallback. | The dose 1 reminder appears at fallback. Wake source is "fallback". |
 | M3 | Reminder buttons | Check the dose 1 notification. | It has "I took my pill" and "Not today", and can't be swiped away. |
-| M4 | Escalation, locked | Lock the phone and ignore the reminder. | After 1 min the screen turns on with the full-screen alarm, sound and vibration. |
+| M4 | Escalation, locked | Lock the phone and ignore the reminder. | After 1 min, or at the fallback time for a dose 1 reminder shown before it (FR-3.1a), the screen turns on with the full-screen alarm, sound and vibration. |
+| M4b | Dose 1 waits for fallback | After M1 (reminder shown before fallback), ignore it. | No alarm until the fallback time; Home shows the alarm counting down to it. |
 | M5 | Escalation, in use | Use another app and ignore the reminder. | The alarm activity appears (or a heads-up plus sound), and sound plays. |
 | M6 | Ring timeout → snooze | Don't touch the alarm. | It stops after 1 min. The notification says "Snoozed until …", and it rings again 1 min later. |
 | M7 | Snooze limit | Let it time out or snooze twice. | On the third ring there's no Snooze button. After its timeout the ringing stops and the ongoing notification remains. Nothing rings again. |

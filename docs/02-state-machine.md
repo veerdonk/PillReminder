@@ -72,7 +72,7 @@ evaluation time.
 | `nextRolloverAt(day)` | `(day + 1)` at `dayRolloverTime`, in `tz` |
 | `lastTakenAt` | `takenAt` of the dose `nextDose − 1` (null for dose 1) |
 | `dueAt` | `lastTakenAt + S.doseInterval` (WAITING only) |
-| `escalateAt` | `reminderShownAt + S.escalationDelay` |
+| `escalateAt` | `reminderShownAt + S.escalationDelay`; for `nextDose == 1`, `max(that, fallbackAt(dayId))` (FR-3.1a) |
 | `ringEndAt` | `ringingSince + S.alarmRingDuration` |
 | `snoozeEndAt` | `snoozedAt + S.snoozeDuration` |
 | `canSnooze` | `snoozesUsed < S.maxSnoozes` |
@@ -249,9 +249,9 @@ isn't running is a no-op.
 | 03:00 | Rollover tick. Yesterday is finalised. | BEFORE_WINDOW, wake-up at 07:00 |
 | 07:00 | Tick; polls every 5 min | DETECTING |
 | 07:25 | Poll: 2 unlocks since 07:10. Dose 1 reminder shown. | REMINDER |
-| 07:40 | Not acted on; alarm rings | RINGING |
-| 07:42 | Ring timeout; snooze 1/3 | SNOOZED |
-| 07:52 | Rings again; I tap "I took my pill" | WAITING (dose 2 due 11:42) |
-| 11:42 | Dose 2 reminder | REMINDER |
-| 11:50 | I tap "I took my pill" | WAITING (dose 3 due 15:40) |
-| 15:40 | Dose 3 reminder; I tap "I took my pill" at 15:41 | DONE, wake-up at 03:00 |
+| 10:30 | Not acted on; the dose 1 alarm waited for the fallback time and rings now | RINGING |
+| 10:32 | Ring timeout; snooze 1/3 | SNOOZED |
+| 10:42 | Rings again; I tap "I took my pill" | WAITING (dose 2 due 14:32) |
+| 14:32 | Dose 2 reminder (alarm at 14:47 if ignored) | REMINDER |
+| 14:40 | I tap "I took my pill" | WAITING (dose 3 due 18:30) |
+| 18:30 | Dose 3 reminder; I tap "I took my pill" at 18:31 | DONE, wake-up at 03:00 |

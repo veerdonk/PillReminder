@@ -61,6 +61,9 @@ settings to make the app reliable (see `06-device-setup-oneplus.md`).
 ### FR-3 Escalation to alarm
 - **FR-3.1** If neither reminder button is tapped within `escalationDelay` (default **15 min**)
   of the reminder appearing, the app raises the **alarm** for that dose.
+- **FR-3.1a** The **dose 1** alarm never rings before that day's `fallbackTime`. When wake is
+  detected early, the dose 1 reminder still appears immediately (FR-1.4), but it only escalates
+  at `fallbackTime`, or `escalationDelay` after it appeared if that is later (A57).
 - **FR-3.2** The alarm is a full-screen activity, shown over the lock screen with the screen
   turned on, plus a matching notification. Both offer:
   - **"I took my pill"**
@@ -361,3 +364,8 @@ Open:
 - **A56** (T10) "Remind me now" is offered only where the engine accepts it (BEFORE_WINDOW,
   DETECTING, WAITING, PENDING_SILENT), not while a reminder or alarm is already active. "Took
   pill N" and "Not today"/"I'm done for today" are offered in every phase except DONE.
+- **A57** (owner request) The dose 1 alarm waits for the fallback time (FR-3.1a). It applies to
+  dose 1 however its reminder appeared (detected, Remind me now, Resume today), and it is
+  derived, not stored: `escalateAt = max(reminderShownAt + escalationDelay, fallbackAt(dayId))`
+  for dose 1. A reminder shown at or after the fallback time escalates after `escalationDelay`
+  as before. Doses 2 and later are unchanged.

@@ -77,7 +77,7 @@ object Engine {
             Phase.WAITING -> dueAt(state, settings) ?: now
             Phase.REMINDER -> {
                 reminder = reminder(alarmStyle = false, subtitle = null)
-                escalateAt(state, settings) ?: now
+                escalateAt(state, settings, zone) ?: now
             }
             Phase.RINGING -> {
                 reminder = reminder(alarmStyle = true, subtitle = null)
@@ -169,7 +169,7 @@ object Engine {
             // A missing base timestamp (corrupt state) restarts that phase's timer from now (A10).
             Phase.REMINDER -> when {
                 state.reminderShownAt == null -> state.copy(reminderShownAt = now)
-                reached(escalateAt(state, s), now) -> state.copy(phase = Phase.RINGING, ringingSince = now)
+                reached(escalateAt(state, s, zone), now) -> state.copy(phase = Phase.RINGING, ringingSince = now)
                 else -> state
             }
             Phase.RINGING -> when {
@@ -297,7 +297,12 @@ object Engine {
 
     private fun dueAt(state: DayState, s: Settings): Instant? = lastTakenAt(state)?.plus(s.doseInterval)
 
-    private fun escalateAt(state: DayState, s: Settings): Instant? = state.reminderShownAt?.plus(s.escalationDelay)
+    /** Dose 1 never rings before the day's fallback time, however early wake was detected (FR-3.1a). */
+    private fun escalateAt(state: DayState, s: Settings, zone: ZoneId): Instant? {
+        val afterDelay = state.reminderShownAt?.plus(s.escalationDelay) ?: return null
+        if (state.nextDose != 1) return afterDelay
+        return maxOf(afterDelay, TimeMath.fallbackAt(state.dayId, s, zone))
+    }
 
     private fun ringEndAt(state: DayState, s: Settings): Instant? = state.ringingSince?.plus(s.alarmRingDuration)
 

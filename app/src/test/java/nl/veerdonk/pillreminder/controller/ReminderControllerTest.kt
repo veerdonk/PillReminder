@@ -237,7 +237,8 @@ class ReminderControllerTest {
 
     @Test
     fun `while ringing apply cancels the reminder, then starts ringing, then schedules`() = runTest {
-        val h = harness(reminder, t("07:40"))
+        // Dose 1 rings at the fallback time (FR-3.1a).
+        val h = harness(reminder, t("10:30"))
         h.controller.tick()
 
         assertEquals(Phase.RINGING, h.state.phase)
@@ -246,7 +247,7 @@ class ReminderControllerTest {
         val ring = (calls[1] as Call.EnsureRinging).spec
         assertEquals(day, ring.dayId)
         assertEquals(1, ring.dose)
-        assertEquals(Call.Schedule(t("07:42"), userVisible = true), calls[2])
+        assertEquals(Call.Schedule(t("10:32"), userVisible = true), calls[2])
     }
 
     @Test
@@ -260,7 +261,7 @@ class ReminderControllerTest {
         assertEquals(day, spec.dayId)
         assertEquals(1, spec.dose)
         assertEquals(false, spec.alarmStyle)
-        assertEquals(Call.Schedule(t("07:40"), userVisible = true), calls[2])
+        assertEquals(Call.Schedule(t("10:30"), userVisible = true), calls[2])
     }
 
     @Test
@@ -381,13 +382,14 @@ class ReminderControllerTest {
 
     @Test
     fun `a settings change moves the scheduled deadline at the next tick`() = runTest {
-        val h = harness(reminder, t("07:30"))
+        val shownLate = reminder.copy(reminderShownAt = t("10:20"), firstRemindedAt = t("10:20"))
+        val h = harness(shownLate, t("10:25"))
         h.controller.tick()
-        assertEquals(t("07:40"), h.lastSchedule().at)
+        assertEquals(t("10:35"), h.lastSchedule().at)
 
         h.settings.value = Settings(escalationDelay = Duration.ofMinutes(30))
         h.controller.tick()
-        assertEquals(t("07:55"), h.lastSchedule().at)
+        assertEquals(t("10:50"), h.lastSchedule().at)
     }
 
     @Test

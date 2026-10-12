@@ -49,9 +49,22 @@ class EngineOutputsTest {
     @Test
     fun `REMINDER shows a normal reminder and wakes at escalateAt`() {
         assertEquals(
-            Outputs(spec(), null, t("07:40")),
+            Outputs(spec(dose = 2), null, t("11:40")),
+            outputs(reminder(dose = 2, shownAt = t("11:25")), t("11:25")),
+        )
+    }
+
+    @Test
+    fun `dose 1 REMINDER before fallback wakes at fallbackAt`() {
+        assertEquals(
+            Outputs(spec(), null, t("10:30")),
             outputs(reminder(shownAt = t("07:25")), t("07:25")),
         )
+    }
+
+    @Test
+    fun `dose 1 REMINDER close to fallback still waits escalationDelay`() {
+        assertEquals(t("10:35"), outputs(reminder(shownAt = t("10:20")), t("10:20")).nextWakeAt)
     }
 
     @Test
@@ -117,14 +130,14 @@ class EngineOutputsTest {
 
     @Test
     fun `an overdue deadline is scheduled one second from now`() {
-        val now = t("08:00")
-        assertEquals(now.plusSeconds(1), outputs(reminder(shownAt = t("07:00")), now).nextWakeAt)
+        val now = t("12:00")
+        assertEquals(now.plusSeconds(1), outputs(reminder(dose = 2, shownAt = t("11:00")), now).nextWakeAt)
     }
 
     @Test
     fun `a deadline equal to now is scheduled one second from now`() {
-        val now = t("07:40")
-        assertEquals(now.plusSeconds(1), outputs(reminder(shownAt = t("07:25")), now).nextWakeAt)
+        val now = t("11:40")
+        assertEquals(now.plusSeconds(1), outputs(reminder(dose = 2, shownAt = t("11:25")), now).nextWakeAt)
     }
 
     @Test

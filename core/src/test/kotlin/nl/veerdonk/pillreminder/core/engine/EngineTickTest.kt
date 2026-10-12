@@ -112,29 +112,51 @@ class EngineTickTest {
 
     @Test
     fun `REMINDER stays before escalateAt`() {
-        val state = reminder(shownAt = t("07:25"))
-        assertEquals(state, step(state, tick, t("07:39:59")))
+        val state = reminder(dose = 2, shownAt = t("11:25"))
+        assertEquals(state, step(state, tick, t("11:39:59")))
     }
 
     @Test
     fun `REMINDER goes to RINGING at escalateAt`() {
-        val state = reminder(shownAt = t("07:25"))
-        assertEquals(state.copy(phase = Phase.RINGING, ringingSince = t("07:40")), step(state, tick, t("07:40")))
+        val state = reminder(dose = 2, shownAt = t("11:25"))
+        assertEquals(state.copy(phase = Phase.RINGING, ringingSince = t("11:40")), step(state, tick, t("11:40")))
     }
 
     @Test
     fun `REMINDER uses the current escalationDelay`() {
-        val state = reminder(shownAt = t("07:25"))
+        val state = reminder(dose = 2, shownAt = t("11:25"))
         val longer = DEFAULTS.copy(escalationDelay = Duration.ofMinutes(30))
-        assertEquals(state, step(state, tick, t("07:40"), longer))
+        assertEquals(state, step(state, tick, t("11:40"), longer))
+    }
+
+    @Test
+    fun `dose 1 REMINDER does not ring before fallbackAt`() {
+        val state = reminder(dose = 1, shownAt = t("07:25"))
+        assertEquals(state, step(state, tick, t("10:29:59")))
+        assertEquals(state.copy(phase = Phase.RINGING, ringingSince = t("10:30")), step(state, tick, t("10:30")))
+    }
+
+    @Test
+    fun `dose 1 REMINDER shown close to fallback still waits escalationDelay`() {
+        val state = reminder(dose = 1, shownAt = t("10:20"))
+        assertEquals(state, step(state, tick, t("10:34:59")))
+        assertEquals(Phase.RINGING, step(state, tick, t("10:35")).phase)
+    }
+
+    @Test
+    fun `dose 1 REMINDER uses the weekend fallback time on Saturday`() {
+        val saturday = java.time.LocalDate.parse("2026-10-17")
+        val state = reminder(dose = 1, shownAt = at("2026-10-17T09:00")).copy(dayId = saturday)
+        assertEquals(Phase.REMINDER, step(state, tick, at("2026-10-17T11:29")).phase)
+        assertEquals(Phase.RINGING, step(state, tick, at("2026-10-17T11:30")).phase)
     }
 
     @Test
     fun `missed deadlines are not replayed`() {
         // Phone boots 3 h after the reminder was shown: straight to RINGING, based on now.
-        val state = reminder(shownAt = t("07:25"))
-        val next = step(state, tick, t("10:25"))
-        assertEquals(state.copy(phase = Phase.RINGING, ringingSince = t("10:25")), next)
+        val state = reminder(dose = 2, shownAt = t("11:25"))
+        val next = step(state, tick, t("14:25"))
+        assertEquals(state.copy(phase = Phase.RINGING, ringingSince = t("14:25")), next)
     }
 
     // --- RINGING ---
@@ -188,11 +210,11 @@ class EngineTickTest {
 
     @Test
     fun `REMINDER without reminderShownAt restarts escalation from now`() {
-        val state = reminder().copy(reminderShownAt = null)
-        val repaired = step(state, tick, t("08:00"))
-        assertEquals(state.copy(reminderShownAt = t("08:00")), repaired)
-        assertEquals(Phase.REMINDER, step(repaired, tick, t("08:14")).phase)
-        assertEquals(Phase.RINGING, step(repaired, tick, t("08:15")).phase)
+        val state = reminder(dose = 2).copy(reminderShownAt = null)
+        val repaired = step(state, tick, t("12:00"))
+        assertEquals(state.copy(reminderShownAt = t("12:00")), repaired)
+        assertEquals(Phase.REMINDER, step(repaired, tick, t("12:14")).phase)
+        assertEquals(Phase.RINGING, step(repaired, tick, t("12:15")).phase)
     }
 
     @Test
