@@ -7,6 +7,7 @@ import nl.veerdonk.pillreminder.core.model.DoseSource
 import nl.veerdonk.pillreminder.core.model.DoseStatus
 import nl.veerdonk.pillreminder.core.model.Phase
 import nl.veerdonk.pillreminder.core.model.Settings
+import nl.veerdonk.pillreminder.core.model.WakeSource
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -151,6 +152,19 @@ class HomeModelTest {
         val reminder = state(Phase.REMINDER).copy(reminderShownAt = at("11:50"))
         val longer = nextAction(reminder, s.copy(escalationDelay = java.time.Duration.ofMinutes(30)), at("11:59"), zone)
         assertEquals(NextAction.AlarmIn(21), longer)
+    }
+
+    @Test fun alarmMoreThanAnHourAwayIsShownAsATime() {
+        // Dose 1 detected at 07:25 is held until the 10:30 fallback (FR-3.1a).
+        val held = state(Phase.REMINDER).copy(
+            wakeAt = at("07:25"),
+            wakeSource = WakeSource.DETECTED,
+            reminderShownAt = at("07:25"),
+        )
+        assertEquals(NextAction.AlarmAt(at("10:30")), next(held, "07:25"))
+        assertEquals(NextAction.AlarmAt(at("10:30")), next(held, "09:29"))
+        assertEquals(NextAction.AlarmIn(60), next(held, "09:30"))
+        assertEquals(NextAction.AlarmIn(1), next(held, "10:29"))
     }
 
     @Test fun minutesUntilRoundsUpAndIsAtLeastOne() {

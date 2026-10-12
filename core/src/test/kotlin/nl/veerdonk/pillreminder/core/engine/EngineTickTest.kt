@@ -1,5 +1,6 @@
 package nl.veerdonk.pillreminder.core.engine
 
+import nl.veerdonk.pillreminder.core.model.Event
 import nl.veerdonk.pillreminder.core.model.Phase
 import nl.veerdonk.pillreminder.core.model.WakeSource
 import org.junit.Assert.assertEquals
@@ -142,6 +143,34 @@ class EngineTickTest {
         val state = reminder(dose = 1, shownAt = t("07:25"))
         assertEquals(state, step(state, tick, t("07:39:59"), off))
         assertEquals(state.copy(phase = Phase.RINGING, ringingSince = t("07:40")), step(state, tick, t("07:40"), off))
+    }
+
+    @Test
+    fun `dose 1 REMINDER from Remind me now is not held until fallback`() {
+        val state = step(detecting(), Event.RemindNow, t("07:00"))
+        assertEquals(WakeSource.MANUAL, state.wakeSource)
+        assertEquals(Phase.REMINDER, step(state, tick, t("07:14:59")).phase)
+        assertEquals(Phase.RINGING, step(state, tick, t("07:15")).phase)
+    }
+
+    @Test
+    fun `dose 1 REMINDER from Remind me now after PENDING_SILENT is not held`() {
+        // Detected day; the alarm already ran out of snoozes before the fallback (hold off then).
+        val silent = pendingSilent(dose = 1)
+        assertEquals(WakeSource.DETECTED, silent.wakeSource)
+        val reminded = step(silent, Event.RemindNow, t("09:00"))
+        assertEquals(Phase.REMINDER, step(reminded, tick, t("09:14:59")).phase)
+        assertEquals(Phase.RINGING, step(reminded, tick, t("09:15")).phase)
+    }
+
+    @Test
+    fun `dose 1 REMINDER from Resume today is not held until fallback`() {
+        // Woken by detection at 07:25, "Not today" at 07:30, resumed at 08:00.
+        val skipped = step(reminder(dose = 1, shownAt = t("07:25")), Event.SkipRest(1), t("07:30"))
+        val resumed = step(skipped, Event.ResumeDay, t("08:00"))
+        assertEquals(WakeSource.DETECTED, resumed.wakeSource)
+        assertEquals(Phase.REMINDER, step(resumed, tick, t("08:14:59")).phase)
+        assertEquals(Phase.RINGING, step(resumed, tick, t("08:15")).phase)
     }
 
     @Test

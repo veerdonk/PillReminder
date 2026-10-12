@@ -228,7 +228,9 @@ visible actions per phase, backdate mapping and validation), `HistoryModel.kt` a
 all unit tested. User actions go through `reminderController.handle` on `appScope`. Routes: home,
 history, settings, setup, oneplus_guide. "Test alarm" calls `container.testAlarm.startTestAlarm()`.
 Assumptions A50-A56 in 01. On-device checks (both themes, ringtone picker, Test alarm, the
-escalationDelay change moving the "Alarm in N min" line) remain for the owner.*
+escalationDelay change moving the "Alarm in N min" line) remain for the owner. Note: since
+FR-3.1a a detected dose 1 reminder before the fallback time escalates at the fallback time, so
+check the escalationDelay change on dose 2, or with "First alarm waits for fallback" off.*
 
 ## T11 — Setup checklist + PermissionChecker
 **Do:**

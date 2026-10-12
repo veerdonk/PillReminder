@@ -97,6 +97,7 @@
         <item quantity="one">Alarm in %1$d min</item>
         <item quantity="other">Alarm in %1$d min</item>
     </plurals>
+    <string name="next_alarm_at">Alarm at %1$s</string>
     <string name="next_ringing">Alarm ringing now</string>
     <string name="next_snoozed_until">Snoozed until %1$s</string>
     <string name="next_no_more_alarms">No more alarms for this dose</string>
@@ -151,7 +152,7 @@
     <string name="setting_snooze_duration">Snooze duration, minutes (1–60)</string>
     <string name="setting_max_snoozes">Max snoozes (0–10)</string>
     <string name="setting_hold_first_alarm">First alarm waits for fallback</string>
-    <string name="setting_hold_first_alarm_hint">The first reminder still appears when you wake up, but its alarm doesn\'t ring before the fallback time.</string>
+    <string name="setting_hold_first_alarm_hint">When you\'re detected as awake, the first reminder still appears right away, but its alarm doesn\'t ring before the fallback time.</string>
     <string name="setting_ring_duration">Ring duration, minutes (1–10)</string>
     <string name="setting_poll_interval">Detection poll interval, minutes (1–15)</string>
     <string name="setting_rollover">Day starts at</string>

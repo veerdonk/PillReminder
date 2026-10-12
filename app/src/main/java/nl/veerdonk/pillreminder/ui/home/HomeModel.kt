@@ -52,6 +52,9 @@ sealed interface NextAction {
     /** REMINDER: the alarm rings in [minutes] (rounded up, at least 1). */
     data class AlarmIn(val minutes: Long) : NextAction
 
+    /** REMINDER: the alarm rings at [at], more than [ALARM_IN_MAX_MINUTES] away (e.g. dose 1 held until fallback). */
+    data class AlarmAt(val at: Instant) : NextAction
+
     /** RINGING. */
     data object Ringing : NextAction
 
@@ -161,13 +164,19 @@ fun nextAction(state: DayState, settings: Settings, now: Instant, zone: ZoneId):
         Phase.BEFORE_WINDOW -> NextAction.DetectionStartsAt(outputs.nextWakeAt)
         Phase.DETECTING -> NextAction.ReminderByFallback(TimeMath.fallbackAt(state.dayId, settings, zone))
         Phase.WAITING -> NextAction.ReminderAt(outputs.nextWakeAt)
-        Phase.REMINDER -> NextAction.AlarmIn(minutesUntil(outputs.nextWakeAt, now))
+        Phase.REMINDER -> {
+            val minutes = minutesUntil(outputs.nextWakeAt, now)
+            if (minutes > ALARM_IN_MAX_MINUTES) NextAction.AlarmAt(outputs.nextWakeAt) else NextAction.AlarmIn(minutes)
+        }
         Phase.RINGING -> NextAction.Ringing
         Phase.SNOOZED -> NextAction.SnoozedUntil(outputs.nextWakeAt)
         Phase.PENDING_SILENT -> NextAction.NoMoreAlarms
         Phase.DONE -> NextAction.DoneUntil(TimeMath.nextRolloverAt(state.dayId, settings, zone))
     }
 }
+
+/** Up to this many minutes the alarm is shown as "Alarm in N min"; beyond it as a time of day. */
+const val ALARM_IN_MAX_MINUTES = 60L
 
 /** Whole minutes until [at], rounded up and at least 1. */
 fun minutesUntil(at: Instant, now: Instant): Long {
