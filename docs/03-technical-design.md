@@ -140,7 +140,11 @@ object TimeMath {
 object WakeRule {
     fun isAwake(events: List<UsageEvt>, from: Instant, to: Instant, s: Settings,
                 countScreenOnAsUnlock: Boolean, excludedPackages: Set<String>): Boolean
+    // Same inputs; also returns the counts, for the T9 detection log. isAwake == evaluate(...).awake
+    fun evaluate(events: List<UsageEvt>, from: Instant, to: Instant, s: Settings,
+                 countScreenOnAsUnlock: Boolean, excludedPackages: Set<String>): WakeCheck
 }
+data class WakeCheck(val unlocks: Int, val foregroundTime: Duration, val awake: Boolean)
 
 // :app
 interface WakeDetector { suspend fun isAwake(from: Instant, to: Instant, settings: Settings): Boolean }
@@ -203,7 +207,12 @@ data class UsageEvt(val time: Instant, val type: Type, val pkg: String) {
 | `SCREEN_INTERACTIVE` | SCREEN_ON |
 | `SCREEN_NON_INTERACTIVE` | SCREEN_OFF |
 | `ACTIVITY_RESUMED` | APP_RESUMED |
-| `ACTIVITY_PAUSED` / `ACTIVITY_STOPPED` | APP_PAUSED |
+| `ACTIVITY_PAUSED` | APP_PAUSED |
+| anything else (incl. `ACTIVITY_STOPPED`) | dropped |
+
+Do **not** map `ACTIVITY_STOPPED`. Within one app, switching activity A → B logs
+`PAUSED(A), RESUMED(B), STOPPED(A)`; a late STOPPED would end the app's interval while B is
+still in front. `ACTIVITY_PAUSED` always comes before `ACTIVITY_STOPPED`, so nothing is lost.
 
 The extra hour before `from` makes sure apps that were already in the foreground are paired
 correctly.
@@ -224,6 +233,10 @@ correctly.
    up to `to`. Treat an APP_PAUSED with no preceding RESUMED as an interval starting at `from`.
    Overlapping intervals (multi-window) are merged, so time is not double-counted.
 3. Return `unlocks ≥ minUnlocks || (minAppUsage > 0 && unlocks ≥ 1 && fgTime ≥ minAppUsage)`.
+
+Cases the steps above leave open (double RESUMED, SCREEN_OFF, a repeated PAUSED, equal timestamps)
+are handled as in 01-requirements A11. `WakeCheck` always reports both `unlocks` and `fgTime`,
+even when rule (a) alone decides the result.
 
 ## 7. Notifications
 

@@ -24,12 +24,23 @@ object WakeRule {
         s: Settings,
         countScreenOnAsUnlock: Boolean,
         excludedPackages: Set<String>,
-    ): Boolean {
+    ): Boolean = evaluate(events, from, to, s, countScreenOnAsUnlock, excludedPackages).awake
+
+    /** [isAwake] plus the counts behind it, for the detection log (T9). */
+    fun evaluate(
+        events: List<UsageEvt>,
+        from: Instant,
+        to: Instant,
+        s: Settings,
+        countScreenOnAsUnlock: Boolean,
+        excludedPackages: Set<String>,
+    ): WakeCheck {
         val sorted = events.sortedBy { it.time } // stable: ties keep the source order
         val unlocks = sorted.count { it.isUnlock(countScreenOnAsUnlock) && it.time in from..to }
-        if (unlocks >= s.minUnlocks) return true
-        if (s.minAppUsage.isZero || unlocks < 1) return false
-        return foregroundTime(sorted, from, to, excludedPackages) >= s.minAppUsage
+        val fgTime = foregroundTime(sorted, from, to, excludedPackages)
+        val awake = unlocks >= s.minUnlocks ||
+            (!s.minAppUsage.isZero && unlocks >= 1 && fgTime >= s.minAppUsage)
+        return WakeCheck(unlocks, fgTime, awake)
     }
 
     private fun UsageEvt.isUnlock(countScreenOn: Boolean): Boolean =

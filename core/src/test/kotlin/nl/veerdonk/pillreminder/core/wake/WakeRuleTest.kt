@@ -2,6 +2,7 @@ package nl.veerdonk.pillreminder.core.wake
 
 import nl.veerdonk.pillreminder.core.model.Settings
 import nl.veerdonk.pillreminder.core.wake.UsageEvt.Type
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -249,6 +250,45 @@ class WakeRuleTest {
         assertFalse(
             WakeRule.isAwake(listOf(unlock("07:05"), unlock("07:06")), to, from, defaults, false, excluded),
         )
+
+    // --- evaluate (counts for the T9 detection log) ---
+
+    private fun check(vararg events: UsageEvt, s: Settings = defaults): WakeCheck =
+        WakeRule.evaluate(events.toList(), from, to, s, false, excluded)
+
+    @Test fun `evaluate reports unlocks and merged foreground time`() =
+        assertEquals(
+            WakeCheck(1, Duration.ofMinutes(3), awake = true),
+            check(
+                unlock("07:01"), unlock("06:50"),
+                resumed("07:05", APP), paused("07:07", APP),
+                resumed("07:06", OTHER), paused("07:08", OTHER),
+                resumed("07:10", launcher), paused("07:15", launcher),
+            ),
+        )
+
+    @Test fun `evaluate reports foreground time even when rule a decides`() =
+        assertEquals(
+            WakeCheck(2, Duration.ofMinutes(1), awake = true),
+            check(unlock("07:01"), unlock("07:02"), resumed("07:05", APP), paused("07:06", APP)),
+        )
+
+    @Test fun `evaluate reports foreground time when rule b is disabled`() =
+        assertEquals(
+            WakeCheck(1, Duration.ofMinutes(10), awake = false),
+            check(unlock("07:01"), resumed("07:05", APP), paused("07:15", APP), s = defaults.copy(minAppUsage = Duration.ZERO)),
+        )
+
+    @Test fun `isAwake matches evaluate`() {
+        val events = listOf(unlock("07:01"), resumed("07:05", APP), paused("07:08", APP))
+        for (minutes in 0L..5L) {
+            val s = defaults.copy(minAppUsage = Duration.ofMinutes(minutes))
+            assertEquals(
+                WakeRule.evaluate(events, from, to, s, false, excluded).awake,
+                WakeRule.isAwake(events, from, to, s, false, excluded),
+            )
+        }
+    }
 
     private companion object {
         const val OWN = "nl.veerdonk.pillreminder"

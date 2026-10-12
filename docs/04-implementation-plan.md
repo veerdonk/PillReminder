@@ -158,11 +158,15 @@ shared `Json` instance for persisting core types. See assumptions A6 and A7 in 0
 
 ## T9 — UsageEventSource + AndroidWakeDetector
 **Do:** implement design §6 (Android side). Returns false when Usage Access is missing.
+Map raw events exactly as in the §6 table; `ACTIVITY_STOPPED` is dropped. Call
+`WakeRule.evaluate` (not `isAwake`) so the detection log can show the counts from `WakeCheck`.
 
 **Accept when:**
 - A debug-only "Detection log" (a text section at the bottom of Settings → Advanced, or a log tag
   `WakeDetect`) shows, for the last check: unlock count, foreground minutes and the result.
 - On the device, unlocking twice within the window triggers dose 1 within one poll interval.
+- A unit test of the raw-event mapping (a pure function from event type to `UsageEvt.Type?`)
+  shows `ACTIVITY_STOPPED` and unknown types are dropped.
 
 ## T10 — Main UI
 **Do:** Home (FR-6 and the Record-dose section FR-5), History (FR-7) and Settings (FR-8),
