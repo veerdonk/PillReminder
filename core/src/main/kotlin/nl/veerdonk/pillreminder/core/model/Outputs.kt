@@ -72,7 +72,4 @@ sealed interface StatusSpec {
 
     /** BEFORE_WINDOW, DETECTING: pill 1 comes once you're up, at [fallbackAt] at the latest. */
     data class WaitingForWake(val doseCount: Int, val fallbackAt: Instant) : StatusSpec
-
-    /** DONE: nothing more today. */
-    data object DoneForToday : StatusSpec
 }

@@ -61,7 +61,8 @@ settings to make the app reliable (see `06-device-setup-oneplus.md`).
   pill" (`showStatusNotification`, default off). When on, a silent ongoing notification stays
   up whenever no reminder or alarm shows. Between doses it reads "Pill N of M at HH:MM" with a
   live countdown to that time; before dose 1 "Once you're up: pill 1 of M, by HH:MM at the
-  latest" (the fallback); after the last dose "All done for today". When a reminder or alarm is
+  latest" (the fallback). Once the day is done (all doses taken, or the rest skipped) it goes
+  away until the next day's rollover (owner request). When a reminder or alarm is
   due it gives way to it, so only one pill notification shows at a time (A59).
 
 ### FR-3 Escalation to alarm

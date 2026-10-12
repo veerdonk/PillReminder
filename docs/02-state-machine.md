@@ -223,7 +223,6 @@ data class RingSpec(val dayId: LocalDate, val dose: Int, val doseCount: Int, val
 sealed interface StatusSpec {                       // worded by :app
     data class NextDose(val dose: Int, val doseCount: Int, val dueAt: Instant) : StatusSpec  // WAITING, counts down to dueAt
     data class WaitingForWake(val doseCount: Int, val fallbackAt: Instant) : StatusSpec      // BEFORE_WINDOW, DETECTING
-    data object DoneForToday : StatusSpec                                                    // DONE
 }
 
 fun outputs(state: DayState, s: Settings, now: Instant, zone: ZoneId): Outputs
@@ -243,7 +242,7 @@ fun outputs(state: DayState, s: Settings, now: Instant, zone: ZoneId): Outputs
 
 `status` is null unless `S.showStatusNotification` is on. Then it is `WaitingForWake(fallbackAt)` in
 BEFORE_WINDOW and DETECTING, `NextDose(nextDose, dueAt)` in WAITING (null if `dueAt` is missing),
-`DoneForToday` in DONE, and null in every phase that shows a reminder. It never changes `nextWakeAt`.
+and null in DONE and in every phase that shows a reminder. It never changes `nextWakeAt`.
 
 If `nextWakeAt ≤ now` (an overdue deadline that the Tick loop didn't resolve, which shouldn't
 happen), schedule it for `now + 1 s`.

@@ -135,10 +135,6 @@ class AndroidNotifier(
                 .setContentTitle(context.getString(R.string.status_wake_title, spec.doseCount))
                 .setContentText(context.getString(R.string.status_wake_text, formatTime(spec.fallbackAt)))
                 .setShowWhen(false)
-            StatusSpec.DoneForToday -> builder
-                .setContentTitle(context.getString(R.string.status_done_title))
-                .setContentText(context.getString(R.string.status_done_text))
-                .setShowWhen(false)
         }
         post(STATUS_NOTIFICATION_ID, builder.build())
     }

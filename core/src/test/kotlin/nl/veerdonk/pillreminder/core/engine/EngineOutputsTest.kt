@@ -1,6 +1,8 @@
 package nl.veerdonk.pillreminder.core.engine
 
+import nl.veerdonk.pillreminder.core.model.Event
 import nl.veerdonk.pillreminder.core.model.Outputs
+import nl.veerdonk.pillreminder.core.model.Phase
 import nl.veerdonk.pillreminder.core.model.ReminderSpec
 import nl.veerdonk.pillreminder.core.model.ReminderSubtitle
 import nl.veerdonk.pillreminder.core.model.RingSpec
@@ -197,8 +199,11 @@ class EngineOutputsTest {
     }
 
     @Test
-    fun `status says done in DONE`() {
-        assertEquals(StatusSpec.DoneForToday, outputs(done(), t("20:00"), withStatus).status)
+    fun `status is gone in DONE`() {
+        assertEquals(null, outputs(done(), t("20:00"), withStatus).status)
+        val skipped = step(waiting(takenAt = t("08:00")), Event.SkipRest(2), t("09:00"), withStatus)
+        assertEquals(Phase.DONE, skipped.phase)
+        assertEquals(null, outputs(skipped, t("09:00"), withStatus).status)
     }
 
     @Test
