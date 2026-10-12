@@ -116,6 +116,7 @@ private fun NextActionLine(action: NextAction, zone: ZoneId) {
         is NextAction.ReminderByFallback -> stringResource(R.string.next_reminder_by_fallback, formatTime(action.fallbackAt, zone))
         is NextAction.ReminderAt -> stringResource(R.string.next_reminder_at, formatTime(action.at, zone))
         is NextAction.AlarmIn -> pluralStringResource(R.plurals.next_alarm_in, action.minutes.toInt(), action.minutes.toInt())
+        is NextAction.AlarmAt -> stringResource(R.string.next_alarm_at, formatTime(action.at, zone))
         NextAction.Ringing -> stringResource(R.string.next_ringing)
         is NextAction.SnoozedUntil -> stringResource(R.string.next_snoozed_until, formatTime(action.until, zone))
         NextAction.NoMoreAlarms -> stringResource(R.string.next_no_more_alarms)

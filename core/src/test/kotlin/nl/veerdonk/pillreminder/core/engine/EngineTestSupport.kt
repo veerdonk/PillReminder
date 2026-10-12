@@ -59,9 +59,10 @@ private fun woken(): DayState =
 internal fun waiting(takenAt: Instant = t("08:00")): DayState =
     woken().copy(phase = Phase.WAITING, nextDose = 2, doses = listOf(taken(1, takenAt)))
 
-/** Reminder for [dose] shown at [shownAt]; earlier doses taken. */
+/** Reminder for [dose] shown at [shownAt]; earlier doses taken. Dose 1 was shown by wake detection. */
 internal fun reminder(dose: Int = 1, shownAt: Instant = t("07:25"), snoozesUsed: Int = 0): DayState =
     woken().copy(
+        wakeAt = if (dose == 1) shownAt else t("07:25"),
         phase = Phase.REMINDER,
         nextDose = dose,
         doses = (1 until dose).map { taken(it, t("07:30").plusSeconds(it * 3600L)) },

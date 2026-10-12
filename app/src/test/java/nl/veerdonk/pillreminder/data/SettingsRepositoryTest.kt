@@ -1,5 +1,6 @@
 package nl.veerdonk.pillreminder.data
 
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import kotlinx.coroutines.CoroutineScope
@@ -135,6 +136,16 @@ class SettingsRepositoryTest {
         // A minute-of-day outside 0..1439 can't even be turned into a LocalTime.
         store.edit { it[intPreferencesKey("day_rollover_time")] = 24 * 60 }
         assertEquals(Settings(), repo.current())
+    }
+
+    @Test
+    fun missingHoldFirstAlarmKeyReadsAsOn() = runTest {
+        // A store written before the setting existed: every other key present, this one absent.
+        val store = newDataStore()
+        val repo = DataStoreSettingsRepository(store)
+        repo.update(allChanged)
+        store.edit { it.remove(booleanPreferencesKey("hold_first_alarm_until_fallback")) }
+        assertEquals(allChanged.copy(holdFirstAlarmUntilFallback = true), repo.current())
     }
 
     @Test

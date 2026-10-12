@@ -61,8 +61,8 @@ settings to make the app reliable (see `06-device-setup-oneplus.md`).
 ### FR-3 Escalation to alarm
 - **FR-3.1** If neither reminder button is tapped within `escalationDelay` (default **15 min**)
   of the reminder appearing, the app raises the **alarm** for that dose.
-- **FR-3.1a** If `holdFirstAlarmUntilFallback` is on (the default), the **dose 1** alarm never
-  rings before that day's `fallbackTime`. When wake is
+- **FR-3.1a** If `holdFirstAlarmUntilFallback` is on (the default), a **dose 1** reminder raised
+  by wake detection never rings before that day's `fallbackTime`. When wake is
   detected early, the dose 1 reminder still appears immediately (FR-1.4), but it only escalates
   at `fallbackTime`, or `escalationDelay` after it appeared if that is later (A57).
 - **FR-3.2** The alarm is a full-screen activity, shown over the lock screen with the screen
@@ -126,7 +126,8 @@ settings to make the app reliable (see `06-device-setup-oneplus.md`).
   active) / *upcoming at ~HH:MM* / *skipped* / *missed*. Before dose 1 it also shows the detection
   state, e.g. "Waiting for you to wake up (from 07:00, fallback 10:30)".
 - **FR-6.2** Shows the time of the next scheduled action. For example: "Next reminder at 14:35",
-  "Alarm in 6 min", or "Snoozed until 09:20".
+  "Alarm in 6 min", or "Snoozed until 09:20". An alarm more than 60 min away (e.g. dose 1 held
+  until the fallback time, FR-3.1a) is shown as a time: "Alarm at 10:30".
 - **FR-6.3** Shows a warning banner when a required permission or setting is missing (see FR-9).
 
 ### FR-7 History
@@ -366,9 +367,10 @@ Open:
 - **A56** (T10) "Remind me now" is offered only where the engine accepts it (BEFORE_WINDOW,
   DETECTING, WAITING, PENDING_SILENT), not while a reminder or alarm is already active. "Took
   pill N" and "Not today"/"I'm done for today" are offered in every phase except DONE.
-- **A57** (owner request) The dose 1 alarm waits for the fallback time (FR-3.1a). It applies to
-  dose 1 however its reminder appeared (detected, Remind me now, Resume today), and it is
-  derived, not stored: `escalateAt = max(reminderShownAt + escalationDelay, fallbackAt(dayId))`
-  for dose 1. A reminder shown at or after the fallback time escalates after `escalationDelay`
-  as before. Doses 2 and later are unchanged. It is a switch in Settings → Alarm
+- **A57** (owner request) The dose 1 alarm waits for the fallback time (FR-3.1a). It only applies
+  when the dose 1 reminder was raised by wake detection (`wakeSource == DETECTED` and
+  `reminderShownAt == wakeAt`). A reminder the user asked for (Remind me now, Resume today)
+  escalates after `escalationDelay` as usual. It is derived, not stored:
+  `escalateAt = max(reminderShownAt + escalationDelay, fallbackAt(dayId))` in that case. A
+  reminder shown at or after the fallback time escalates after `escalationDelay` as before. Doses 2 and later are unchanged. It is a switch in Settings → Alarm
   (`holdFirstAlarmUntilFallback`, default on); off restores the plain FR-3.1 behaviour.

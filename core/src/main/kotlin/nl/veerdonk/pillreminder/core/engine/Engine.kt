@@ -297,10 +297,15 @@ object Engine {
 
     private fun dueAt(state: DayState, s: Settings): Instant? = lastTakenAt(state)?.plus(s.doseInterval)
 
-    /** If enabled, dose 1 never rings before the day's fallback time, however early wake was detected (FR-3.1a). */
+    /**
+     * If enabled, a dose 1 reminder raised by wake detection never rings before the day's fallback
+     * time (FR-3.1a). A reminder the user asked for (Remind me now, Resume today) is not held (A57).
+     */
     private fun escalateAt(state: DayState, s: Settings, zone: ZoneId): Instant? {
-        val afterDelay = state.reminderShownAt?.plus(s.escalationDelay) ?: return null
-        if (state.nextDose != 1 || !s.holdFirstAlarmUntilFallback) return afterDelay
+        val shownAt = state.reminderShownAt ?: return null
+        val afterDelay = shownAt + s.escalationDelay
+        val shownByDetection = state.wakeSource == WakeSource.DETECTED && shownAt == state.wakeAt
+        if (state.nextDose != 1 || !s.holdFirstAlarmUntilFallback || !shownByDetection) return afterDelay
         return maxOf(afterDelay, TimeMath.fallbackAt(state.dayId, s, zone))
     }
 

@@ -393,6 +393,21 @@ class ReminderControllerTest {
     }
 
     @Test
+    fun `turning the first-alarm hold off mid-reminder moves the alarm to the escalation delay`() = runTest {
+        val h = harness(reminder, t("07:30"))
+        h.controller.tick()
+        assertEquals(t("10:30"), h.lastSchedule().at) // held until the fallback (FR-3.1a)
+
+        h.settings.value = Settings(holdFirstAlarmUntilFallback = false)
+        h.controller.tick()
+        assertEquals(t("07:40"), h.lastSchedule().at)
+
+        h.clock.now = t("07:40")
+        h.controller.tick()
+        assertEquals(Phase.RINGING, h.state.phase)
+    }
+
+    @Test
     fun `the zone is read on every call`() = runTest {
         var zone = ams
         val log = CallLog()
