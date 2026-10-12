@@ -26,7 +26,7 @@ Wave 5:  T12 integration hardening + manual test pass
 | T7 | Notifications + ActionReceiver | T2 | [x] |
 | T8 | Alarm ring service + AlarmActivity | T7 | [x] |
 | T9 | UsageEventSource + AndroidWakeDetector | T4 | [x] |
-| T10 | Main UI: Home, Record dose, History, Settings | T5, T6 | [ ] |
+| T10 | Main UI: Home, Record dose, History, Settings | T5, T6 | [x] |
 | T11 | Setup checklist + PermissionChecker | T1 | [x] |
 | T12 | Integration, hardening, manual test pass | all | [ ] |
 
@@ -220,6 +220,15 @@ actions through `ReminderController`.
   "next action" line).
 - History shows today live and past days after rollover.
 - The UI works in both light and dark theme.
+
+*Done 2026-10-12. `ui/home`, `ui/history` and `ui/settings` each have a ViewModel (built by
+`AppViewModelFactory` from `AppContainer`, using `lifecycle-viewmodel-compose`, already pulled in by
+navigation-compose) and a screen; the pure parts are `HomeModel.kt` (dose rows, next-action line,
+visible actions per phase, backdate mapping and validation), `HistoryModel.kt` and `SettingsForm.kt`,
+all unit tested. User actions go through `reminderController.handle` on `appScope`. Routes: home,
+history, settings, setup, oneplus_guide. "Test alarm" calls `container.testAlarm.startTestAlarm()`.
+Assumptions A50-A56 in 01. On-device checks (both themes, ringtone picker, Test alarm, the
+escalationDelay change moving the "Alarm in N min" line) remain for the owner.*
 
 ## T11 — Setup checklist + PermissionChecker
 **Do:**

@@ -4,29 +4,23 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.remember
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
+import nl.veerdonk.pillreminder.AppContainer
 import nl.veerdonk.pillreminder.PillReminderApp
-import nl.veerdonk.pillreminder.R
-import nl.veerdonk.pillreminder.platform.PermissionChecker
-import nl.veerdonk.pillreminder.platform.SetupStatus
+import nl.veerdonk.pillreminder.ui.history.HistoryScreen
+import nl.veerdonk.pillreminder.ui.history.HistoryViewModel
+import nl.veerdonk.pillreminder.ui.home.HomeScreen
+import nl.veerdonk.pillreminder.ui.home.HomeViewModel
+import nl.veerdonk.pillreminder.ui.settings.SettingsScreen
+import nl.veerdonk.pillreminder.ui.settings.SettingsViewModel
 import nl.veerdonk.pillreminder.ui.setup.OnePlusGuideScreen
-import nl.veerdonk.pillreminder.ui.setup.PermissionBanner
 import nl.veerdonk.pillreminder.ui.setup.SetupScreen
 import nl.veerdonk.pillreminder.ui.setup.rememberSetupStatus
 import nl.veerdonk.pillreminder.ui.theme.PillReminderTheme
@@ -41,7 +35,7 @@ class MainActivity : ComponentActivity() {
         val start = if (checker.check().isSetupNeeded(checker.setupSeen)) Routes.SETUP else Routes.HOME
         setContent {
             PillReminderTheme {
-                AppNavHost(checker = checker, startDestination = start)
+                AppNavHost(container = container, startDestination = start)
             }
         }
     }
@@ -54,22 +48,43 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-/** Navigation routes. T10 adds Home, History and Settings content behind these. */
+/** Navigation routes. */
 object Routes {
     const val HOME = "home"
+    const val HISTORY = "history"
+    const val SETTINGS = "settings"
     const val SETUP = "setup"
     const val ONEPLUS_GUIDE = "oneplus_guide"
 }
 
 @Composable
-private fun AppNavHost(checker: PermissionChecker, startDestination: String) {
+private fun AppNavHost(container: AppContainer, startDestination: String) {
+    val checker = container.permissionChecker
     val navController = rememberNavController()
+    val factory = remember(container) { AppViewModelFactory(container) }
     NavHost(navController = navController, startDestination = startDestination) {
         composable(Routes.HOME) {
             val status by rememberSetupStatus(checker)
-            PlaceholderScreen(
-                status = status,
+            HomeScreen(
+                viewModel = viewModel<HomeViewModel>(factory = factory),
+                setupStatus = status,
                 onOpenSetup = { navController.navigate(Routes.SETUP) },
+                onOpenHistory = { navController.navigate(Routes.HISTORY) },
+                onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+            )
+        }
+        composable(Routes.HISTORY) {
+            HistoryScreen(
+                viewModel = viewModel<HistoryViewModel>(factory = factory),
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable(Routes.SETTINGS) {
+            SettingsScreen(
+                viewModel = viewModel<SettingsViewModel>(factory = factory),
+                detectionLog = container.detectionLog,
+                onTestAlarm = { container.testAlarm.startTestAlarm() },
+                onBack = { navController.popBackStack() },
             )
         }
         composable(Routes.SETUP) {
@@ -88,34 +103,4 @@ private fun AppNavHost(checker: PermissionChecker, startDestination: String) {
             OnePlusGuideScreen(checker = checker, onBack = { navController.popBackStack() })
         }
     }
-}
-
-@Composable
-private fun PlaceholderScreen(status: SetupStatus, onOpenSetup: () -> Unit) {
-    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentAlignment = Alignment.Center,
-        ) {
-            PermissionBanner(
-                status = status,
-                onOpenSetup = onOpenSetup,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(16.dp),
-            )
-            Text(
-                text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.headlineMedium,
-            )
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun PlaceholderScreenPreview() {
-    PillReminderTheme { PlaceholderScreen(status = SetupStatus(emptySet()), onOpenSetup = {}) }
 }

@@ -339,3 +339,25 @@ Open:
 - **A43** (T11) The manifest declares PACKAGE_USAGE_STATS (design §9 lists it; shared with T9) so the app
   shows up under Usage access. T9 reads the log. The battery-optimisation dialog is lint's
   `BatteryLife`, suppressed because the app is sideloaded.
+- **A50** (T10) A time picked for "Took pill N at…" is a time of day, mapped to the current app-day
+  (`dayIdOf(now)`): on that calendar date, or the next date when it is before `dayRolloverTime`
+  (so 01:30 after midnight belongs to the previous evening's day). The check in FR-5.2 is on the
+  resulting instant, so an early-morning pick during the evening is "in the future".
+- **A51** (T10) Home shows a stored state from an older app-day as its rolled-over successor
+  (`Engine.reduce(Tick)` in memory) until the real rollover Tick runs. The Home model is
+  re-evaluated every 15 s, so relative times ("Alarm in 6 min") stay fresh within that.
+- **A52** (T10) "Upcoming at ~HH:MM" is only shown while WAITING (last taken time + `doseInterval`,
+  plus one interval per later dose). Before dose 1 the time isn't predictable, so it reads "upcoming"
+  and the detection line gives the window. Inline Settings errors for out-of-range values show the
+  English message from `Settings.validate()` in `:core`; only the "enter a whole number" error is
+  in `strings.xml`.
+- **A53** (T10) The Detection log is shown when the app is debuggable (`FLAG_DEBUGGABLE`), so no
+  `buildConfig` feature is needed.
+- **A54** (T10) Settings has an explicit Save (top bar), disabled while invalid or unchanged.
+  "Reset to defaults" asks for confirmation and then saves the defaults at once. A picked alarm
+  sound equal to the system default alarm is stored as `null`.
+- **A55** (T10) History shows today's doses without a row as pending (the active dose) or upcoming,
+  and adds the in-progress dose's snoozes (only on the live state) to today's snooze count.
+- **A56** (T10) "Remind me now" is offered only where the engine accepts it (BEFORE_WINDOW,
+  DETECTING, WAITING, PENDING_SILENT), not while a reminder or alarm is already active. "Took
+  pill N" and "Not today"/"I'm done for today" are offered in every phase except DONE.
