@@ -6,6 +6,7 @@ import nl.veerdonk.pillreminder.core.model.DoseSource
 import nl.veerdonk.pillreminder.core.model.DoseStatus
 import nl.veerdonk.pillreminder.core.model.Event
 import nl.veerdonk.pillreminder.core.model.Phase
+import nl.veerdonk.pillreminder.core.model.ReminderSubtitle
 import nl.veerdonk.pillreminder.core.model.WakeSource
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -44,7 +45,7 @@ class EngineScenarioTest {
         s = step(s, tick, t("07:42"))
         assertEquals(Phase.SNOOZED, s.phase)
         assertEquals(1, s.snoozesUsed)
-        assertEquals("Snoozed until 07:52", outputs(s, t("07:42")).reminder!!.subtitle)
+        assertEquals(ReminderSubtitle.Snoozed(t("07:52")), outputs(s, t("07:42")).reminder!!.subtitle)
 
         s = step(s, tick, t("07:52"))
         assertEquals(Phase.RINGING, s.phase)

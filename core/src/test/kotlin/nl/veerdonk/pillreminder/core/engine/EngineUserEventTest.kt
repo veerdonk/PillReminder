@@ -158,10 +158,7 @@ class EngineUserEventTest {
         val state = ringing(since = t("07:40"), snoozesUsed = 1)
         val next = step(state, Event.SkipRest(1), t("07:41"))
         assertEquals(
-            state.copy(
-                phase = Phase.DONE,
-                doses = listOf(skipped(1, snoozes = 1, firstRemindedAt = state.firstRemindedAt), skipped(2), skipped(3)),
-            ),
+            doneFrom(state, listOf(skipped(1, snoozes = 1, firstRemindedAt = state.firstRemindedAt), skipped(2), skipped(3))),
             next,
         )
     }

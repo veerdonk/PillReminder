@@ -6,6 +6,7 @@ import nl.veerdonk.pillreminder.core.model.DoseSource
 import nl.veerdonk.pillreminder.core.model.DoseStatus
 import nl.veerdonk.pillreminder.core.model.Phase
 import nl.veerdonk.pillreminder.core.model.ReminderSpec
+import nl.veerdonk.pillreminder.core.model.ReminderSubtitle
 import nl.veerdonk.pillreminder.core.model.Settings
 import nl.veerdonk.pillreminder.core.model.WakeSource
 import org.junit.Assert.assertEquals
@@ -71,8 +72,15 @@ class JsonRoundTripTest {
 
     @Test
     fun `ReminderSpec round-trips`() {
-        val spec = ReminderSpec(LocalDate.of(2026, 10, 12), 2, 3, false, true, 2, "Snoozed until 09:20")
-        val json = CoreJson.encodeToString(ReminderSpec.serializer(), spec)
-        assertEquals(spec, CoreJson.decodeFromString(ReminderSpec.serializer(), json))
+        val subtitles = listOf(
+            null,
+            ReminderSubtitle.Snoozed(Instant.parse("2026-10-12T07:20:00Z")),
+            ReminderSubtitle.AlarmStopped,
+        )
+        for (subtitle in subtitles) {
+            val spec = ReminderSpec(LocalDate.of(2026, 10, 12), 2, 3, false, true, 2, subtitle)
+            val json = CoreJson.encodeToString(ReminderSpec.serializer(), spec)
+            assertEquals(spec, CoreJson.decodeFromString(ReminderSpec.serializer(), json))
+        }
     }
 }

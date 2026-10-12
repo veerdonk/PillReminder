@@ -1,9 +1,11 @@
-@file:UseSerializers(LocalDateSerializer::class)
+@file:UseSerializers(LocalDateSerializer::class, InstantSerializer::class)
 
 package nl.veerdonk.pillreminder.core.model
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
+import nl.veerdonk.pillreminder.core.serial.InstantSerializer
 import nl.veerdonk.pillreminder.core.serial.LocalDateSerializer
 import java.time.Instant
 import java.time.LocalDate
@@ -23,8 +25,25 @@ data class ReminderSpec(
     val alarmStyle: Boolean,
     val canSnooze: Boolean,
     val snoozesLeft: Int,
-    val subtitle: String?,
+    val subtitle: ReminderSubtitle?,
 )
+
+/**
+ * Extra line on the reminder notification. Typed rather than text, so `:app` can word it from
+ * `strings.xml` (NFR-5, assumption A9).
+ */
+@Serializable
+sealed interface ReminderSubtitle {
+    /** "Snoozed until HH:MM": [until] is the snooze end, formatted by `:app` in the device zone. */
+    @Serializable
+    @SerialName("snoozed")
+    data class Snoozed(val until: Instant) : ReminderSubtitle
+
+    /** "Alarm stopped — please take your pill" (snoozes exhausted). */
+    @Serializable
+    @SerialName("alarmStopped")
+    data object AlarmStopped : ReminderSubtitle
+}
 
 @Serializable
 data class RingSpec(

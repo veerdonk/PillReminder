@@ -85,7 +85,8 @@ shared `Json` instance for persisting core types. See assumptions A6 and A7 in 0
 - The engine has no Android imports and all logic uses the passed-in `now`/`zone`.
 
 *Done 2026-10-12. `Engine` lives in `core.engine`; tests are in `core/src/test/.../engine/`
-(one file per table, plus scenarios). See assumptions A8–A10 in 01.*
+(one file per table, plus scenarios). Confirmed assumptions A8–A10 in 01; A9 made
+`ReminderSpec.subtitle` a typed `ReminderSubtitle` (02 §5).*
 
 ## T4 — WakeRule
 **Do:** implement `WakeRule.isAwake` (design §6) in `:core`.

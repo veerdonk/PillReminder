@@ -7,6 +7,7 @@ import nl.veerdonk.pillreminder.core.model.Event
 import nl.veerdonk.pillreminder.core.model.Outputs
 import nl.veerdonk.pillreminder.core.model.Phase
 import nl.veerdonk.pillreminder.core.model.ReminderSpec
+import nl.veerdonk.pillreminder.core.model.ReminderSubtitle
 import nl.veerdonk.pillreminder.core.model.RingSpec
 import nl.veerdonk.pillreminder.core.model.Settings
 import nl.veerdonk.pillreminder.core.model.Transition
@@ -16,8 +17,6 @@ import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 /**
  * The daily state machine as a pure reducer (02-state-machine §4) plus its declarative
@@ -25,16 +24,9 @@ import java.util.Locale
  */
 object Engine {
 
-    /** Subtitle of the reminder while SNOOZED; `%s` is the snooze end as HH:MM. */
-    const val SUBTITLE_SNOOZED_FORMAT: String = "Snoozed until %s"
-
-    /** Subtitle of the reminder in PENDING_SILENT. */
-    const val SUBTITLE_PENDING_SILENT: String = "Alarm stopped — please take your pill"
-
     /** Upper bound on Tick iterations per event (02 §4.2). */
     private const val MAX_TICK_ITERATIONS = 10
 
-    private val HH_MM: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT)
     private val OVERDUE_DELAY: Duration = Duration.ofSeconds(1)
 
     /** A fresh day: BEFORE_WINDOW, dose 1, no doses, every other field null/0. */
@@ -63,7 +55,7 @@ object Engine {
         val snoozesLeft = (settings.maxSnoozes - state.snoozesUsed).coerceAtLeast(0)
         val rolloverAt = TimeMath.nextRolloverAt(state.dayId, settings, zone)
 
-        fun reminder(alarmStyle: Boolean, subtitle: String?) = ReminderSpec(
+        fun reminder(alarmStyle: Boolean, subtitle: ReminderSubtitle?) = ReminderSpec(
             dayId = state.dayId,
             dose = state.nextDose,
             doseCount = doseCount,
@@ -75,7 +67,7 @@ object Engine {
 
         var reminder: ReminderSpec? = null
         var ringing: RingSpec? = null
-        // A missing base timestamp means a corrupt state; treat its deadline as overdue.
+        // A missing base timestamp means a corrupt state: wake at once, so a Tick repairs it.
         val wakeAt: Instant = when (state.phase) {
             Phase.BEFORE_WINDOW -> TimeMath.earliestAt(state.dayId, settings, zone)
             Phase.DETECTING -> minOf(
@@ -94,14 +86,11 @@ object Engine {
             }
             Phase.SNOOZED -> {
                 val end = snoozeEndAt(state, settings) ?: now
-                reminder = reminder(
-                    alarmStyle = false,
-                    subtitle = SUBTITLE_SNOOZED_FORMAT.format(HH_MM.format(end.atZone(zone))),
-                )
+                reminder = reminder(alarmStyle = false, subtitle = ReminderSubtitle.Snoozed(end))
                 end
             }
             Phase.PENDING_SILENT -> {
-                reminder = reminder(alarmStyle = false, subtitle = SUBTITLE_PENDING_SILENT)
+                reminder = reminder(alarmStyle = false, subtitle = ReminderSubtitle.AlarmStopped)
                 rolloverAt
             }
             Phase.DONE -> rolloverAt
@@ -139,15 +128,18 @@ object Engine {
                     firstRemindedAt = if (current) state.firstRemindedAt else null,
                 )
             }
-        return state.copy(doses = (state.doses + missed).sortedBy { it.index })
+        // Every DONE state looks the same: per-dose fields cleared (assumption A10).
+        return state.copy(phase = Phase.DONE, doses = (state.doses + missed).sortedBy { it.index }).clearPerDose()
     }
 
     // --- 4.2 Tick ---
 
     private fun tick(state: DayState, wakeDetected: Boolean, s: Settings, now: Instant, zone: ZoneId): DayState {
+        // Detection only ran if the day was already DETECTING (02 §6, FR-1.6; assumption A10).
+        val detected = wakeDetected && state.phase == Phase.DETECTING
         var current = state
         repeat(MAX_TICK_ITERATIONS) {
-            val next = tickOnce(current, wakeDetected, s, now, zone)
+            val next = tickOnce(current, detected, s, now, zone)
             if (next.phase == current.phase) return next
             current = next
         }
@@ -157,7 +149,7 @@ object Engine {
     private fun tickOnce(state: DayState, wakeDetected: Boolean, s: Settings, now: Instant, zone: ZoneId): DayState {
         // dosesPerDay lowered below nextDose: the day is complete, nothing recorded.
         if (state.phase != Phase.DONE && state.nextDose > s.dosesPerDay) {
-            return state.copy(phase = Phase.DONE)
+            return state.copy(phase = Phase.DONE).clearPerDose()
         }
         return when (state.phase) {
             Phase.BEFORE_WINDOW ->
@@ -167,22 +159,31 @@ object Engine {
                 now >= TimeMath.fallbackAt(state.dayId, s, zone) -> wake(state, WakeSource.FALLBACK, now)
                 else -> state
             }
+            // No previous dose time to wait from (corrupt state): remind now.
             Phase.WAITING ->
                 if (reached(dueAt(state, s), now)) {
                     state.copy(phase = Phase.REMINDER, reminderShownAt = now, firstRemindedAt = now)
                 } else {
                     state
                 }
-            Phase.REMINDER ->
-                if (reached(escalateAt(state, s), now)) state.copy(phase = Phase.RINGING, ringingSince = now) else state
+            // A missing base timestamp (corrupt state) restarts that phase's timer from now (A10).
+            Phase.REMINDER -> when {
+                state.reminderShownAt == null -> state.copy(reminderShownAt = now)
+                reached(escalateAt(state, s), now) -> state.copy(phase = Phase.RINGING, ringingSince = now)
+                else -> state
+            }
             Phase.RINGING -> when {
+                state.ringingSince == null -> state.copy(ringingSince = now)
                 !reached(ringEndAt(state, s), now) -> state
                 canSnooze(state, s) ->
                     state.copy(phase = Phase.SNOOZED, snoozedAt = now, snoozesUsed = state.snoozesUsed + 1)
                 else -> state.copy(phase = Phase.PENDING_SILENT, ringingSince = null)
             }
-            Phase.SNOOZED ->
-                if (reached(snoozeEndAt(state, s), now)) state.copy(phase = Phase.RINGING, ringingSince = now) else state
+            Phase.SNOOZED -> when {
+                state.snoozedAt == null -> state.copy(snoozedAt = now)
+                reached(snoozeEndAt(state, s), now) -> state.copy(phase = Phase.RINGING, ringingSince = now)
+                else -> state
+            }
             Phase.PENDING_SILENT, Phase.DONE -> state
         }
     }
@@ -238,7 +239,7 @@ object Engine {
                 firstRemindedAt = if (current) state.firstRemindedAt else null,
             )
         }
-        return state.copy(phase = Phase.DONE, doses = state.doses + skipped)
+        return state.copy(phase = Phase.DONE, doses = state.doses + skipped).clearPerDose()
     }
 
     private fun snooze(state: DayState, e: Event.Snooze, s: Settings, now: Instant): DayState {
@@ -304,6 +305,6 @@ object Engine {
 
     private fun canSnooze(state: DayState, s: Settings): Boolean = state.snoozesUsed < s.maxSnoozes
 
-    /** A deadline is reached at or after it; a missing base timestamp counts as reached. */
+    /** A deadline is reached at or after it; a missing one (no previous dose) counts as reached. */
     private fun reached(deadline: Instant?, now: Instant): Boolean = deadline == null || now >= deadline
 }

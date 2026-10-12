@@ -72,6 +72,11 @@ class EngineTickTest {
     }
 
     @Test
+    fun `wakeDetected is ignored in the Tick that enters DETECTING`() {
+        assertEquals(beforeWindow().copy(phase = Phase.DETECTING), step(beforeWindow(), tickAwake, t("07:30")))
+    }
+
+    @Test
     fun `BEFORE_WINDOW passes through DETECTING to REMINDER in one Tick after fallback`() {
         val next = step(beforeWindow(), tick, t("10:45"))
         assertEquals(Phase.REMINDER, next.phase)
@@ -179,6 +184,38 @@ class EngineTickTest {
         assertEquals(state.copy(phase = Phase.RINGING, ringingSince = t("07:52")), step(state, tick, t("07:52")))
     }
 
+    // --- corrupt states: a missing base timestamp restarts the timer from now ---
+
+    @Test
+    fun `REMINDER without reminderShownAt restarts escalation from now`() {
+        val state = reminder().copy(reminderShownAt = null)
+        val repaired = step(state, tick, t("08:00"))
+        assertEquals(state.copy(reminderShownAt = t("08:00")), repaired)
+        assertEquals(Phase.REMINDER, step(repaired, tick, t("08:14")).phase)
+        assertEquals(Phase.RINGING, step(repaired, tick, t("08:15")).phase)
+    }
+
+    @Test
+    fun `RINGING without ringingSince rings for a full ring duration from now`() {
+        val state = ringing().copy(ringingSince = null)
+        assertEquals(state.copy(ringingSince = t("08:00")), step(state, tick, t("08:00")))
+    }
+
+    @Test
+    fun `SNOOZED without snoozedAt snoozes for a full snooze duration from now`() {
+        val state = snoozed().copy(snoozedAt = null)
+        assertEquals(state.copy(snoozedAt = t("08:00")), step(state, tick, t("08:00")))
+    }
+
+    @Test
+    fun `WAITING without a previous dose time shows the reminder now`() {
+        val state = waiting().copy(doses = emptyList())
+        assertEquals(
+            state.copy(phase = Phase.REMINDER, reminderShownAt = t("08:00"), firstRemindedAt = t("08:00")),
+            step(state, tick, t("08:00")),
+        )
+    }
+
     // --- PENDING_SILENT, DONE ---
 
     @Test
@@ -201,7 +238,7 @@ class EngineTickTest {
         val lowered = DEFAULTS.copy(dosesPerDay = 1)
         for (phase in Phase.entries - Phase.DONE) {
             val state = stateIn(phase).copy(nextDose = 2)
-            assertEquals("phase $phase", state.copy(phase = Phase.DONE), step(state, tick, t("08:01"), lowered))
+            assertEquals("phase $phase", doneFrom(state), step(state, tick, t("08:01"), lowered))
         }
     }
 

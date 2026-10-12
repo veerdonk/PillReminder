@@ -2,6 +2,7 @@ package nl.veerdonk.pillreminder.core.engine
 
 import nl.veerdonk.pillreminder.core.model.Outputs
 import nl.veerdonk.pillreminder.core.model.ReminderSpec
+import nl.veerdonk.pillreminder.core.model.ReminderSubtitle
 import nl.veerdonk.pillreminder.core.model.RingSpec
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -16,7 +17,7 @@ class EngineOutputsTest {
         alarmStyle: Boolean = false,
         canSnooze: Boolean = true,
         snoozesLeft: Int = 3,
-        subtitle: String? = null,
+        subtitle: ReminderSubtitle? = null,
     ) = ReminderSpec(DAY, dose, 3, alarmStyle, canSnooze, snoozesLeft, subtitle)
 
     @Test
@@ -80,29 +81,22 @@ class EngineOutputsTest {
     @Test
     fun `SNOOZED shows the snooze end and wakes at snoozeEndAt`() {
         assertEquals(
-            Outputs(spec(snoozesLeft = 2, subtitle = "Snoozed until 07:52"), null, t("07:52")),
+            Outputs(spec(snoozesLeft = 2, subtitle = ReminderSubtitle.Snoozed(t("07:52"))), null, t("07:52")),
             outputs(snoozed(snoozedAt = t("07:42"), snoozesUsed = 1), t("07:42")),
         )
     }
 
     @Test
-    fun `SNOOZED subtitle truncates seconds`() {
+    fun `SNOOZED subtitle carries the exact snooze end`() {
         val out = outputs(snoozed(snoozedAt = t("07:42:30")), t("07:42:30"))
-        assertEquals("Snoozed until 07:52", out.reminder!!.subtitle)
-    }
-
-    @Test
-    fun `SNOOZED subtitle is formatted in the passed zone`() {
-        val state = snoozed(snoozedAt = t("07:42")) // 05:42 UTC
-        val utc = Engine.outputs(state, DEFAULTS, t("07:42"), ZoneId.of("UTC"))
-        assertEquals("Snoozed until 05:52", utc.reminder!!.subtitle)
+        assertEquals(ReminderSubtitle.Snoozed(t("07:52:30")), out.reminder!!.subtitle)
     }
 
     @Test
     fun `PENDING_SILENT shows the stopped subtitle and wakes at rollover`() {
         assertEquals(
             Outputs(
-                spec(canSnooze = false, snoozesLeft = 0, subtitle = "Alarm stopped — please take your pill"),
+                spec(canSnooze = false, snoozesLeft = 0, subtitle = ReminderSubtitle.AlarmStopped),
                 null,
                 rolloverAt,
             ),
@@ -131,6 +125,19 @@ class EngineOutputsTest {
     fun `a deadline equal to now is scheduled one second from now`() {
         val now = t("07:40")
         assertEquals(now.plusSeconds(1), outputs(reminder(shownAt = t("07:25")), now).nextWakeAt)
+    }
+
+    @Test
+    fun `a corrupt state without its base timestamp wakes one second from now`() {
+        val now = t("08:00")
+        for (state in listOf(
+            reminder().copy(reminderShownAt = null),
+            ringing().copy(ringingSince = null),
+            snoozed().copy(snoozedAt = null),
+            waiting().copy(doses = emptyList()),
+        )) {
+            assertEquals("phase ${state.phase}", now.plusSeconds(1), outputs(state, now).nextWakeAt)
+        }
     }
 
     @Test

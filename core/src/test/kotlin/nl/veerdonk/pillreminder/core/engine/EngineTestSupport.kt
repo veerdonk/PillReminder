@@ -89,6 +89,17 @@ internal fun done(): DayState = woken().copy(
     doses = listOf(taken(1, t("07:30")), taken(2, t("11:30")), taken(3, t("15:30"))),
 )
 
+/** [state] as DONE with the per-dose fields cleared, the shape every DONE state has (A10). */
+internal fun doneFrom(state: DayState, doses: List<DoseRecord> = state.doses): DayState = state.copy(
+    phase = Phase.DONE,
+    doses = doses,
+    reminderShownAt = null,
+    firstRemindedAt = null,
+    ringingSince = null,
+    snoozedAt = null,
+    snoozesUsed = 0,
+)
+
 /** One state per phase, keyed by phase, for table-driven tests. */
 internal fun stateIn(phase: Phase): DayState = when (phase) {
     Phase.BEFORE_WINDOW -> beforeWindow()

@@ -45,11 +45,9 @@ class EngineRolloverTest {
         val state = ringing(dose = 1, since = at("${DAY}T23:59"), snoozesUsed = 2)
         val tr = reduce(state, tick, rolloverAt)
 
-        val finished = tr.finishedDay!!
-        assertEquals(DAY, finished.dayId)
         assertEquals(
-            listOf(missed(1, snoozes = 2, firstRemindedAt = state.firstRemindedAt), missed(2), missed(3)),
-            finished.doses,
+            doneFrom(state, listOf(missed(1, snoozes = 2, firstRemindedAt = state.firstRemindedAt), missed(2), missed(3))),
+            tr.finishedDay,
         )
         assertEquals(Engine.fresh(NEXT_DAY), tr.state)
     }
@@ -68,6 +66,7 @@ class EngineRolloverTest {
             val tr = reduce(state, tick, rolloverAt)
             val missedIndices = tr.finishedDay!!.doses.filter { it.status == DoseStatus.MISSED }.map { it.index }
             assertEquals("phase $phase", (state.nextDose..3).toList(), missedIndices)
+            assertEquals("phase $phase", doneFrom(state, tr.finishedDay!!.doses), tr.finishedDay)
             assertEquals("phase $phase", Engine.fresh(NEXT_DAY), tr.state)
         }
     }
@@ -131,6 +130,12 @@ class EngineRolloverTest {
         val late = reduce(reminder(), tick, at("${NEXT_DAY}T10:30"))
         assertEquals(Phase.REMINDER, late.state.phase)
         assertEquals(WakeSource.FALLBACK, late.state.wakeSource)
+    }
+
+    @Test
+    fun `Tick after a rollover ignores wakeDetected because detection was not run for the new day`() {
+        val tr = reduce(detecting(), tickAwake, at("${NEXT_DAY}T07:30"))
+        assertEquals(Engine.fresh(NEXT_DAY).copy(phase = Phase.DETECTING), tr.state)
     }
 
     @Test
