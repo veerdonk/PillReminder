@@ -25,7 +25,7 @@ Wave 5:  T12 integration hardening + manual test pass
 | T6 | Scheduler, receivers, ReminderController | T3, T5 | [x] |
 | T7 | Notifications + ActionReceiver | T2 | [x] |
 | T8 | Alarm ring service + AlarmActivity | T7 | [ ] |
-| T9 | UsageEventSource + AndroidWakeDetector | T4 | [ ] |
+| T9 | UsageEventSource + AndroidWakeDetector | T4 | [x] |
 | T10 | Main UI: Home, Record dose, History, Settings | T5, T6 | [ ] |
 | T11 | Setup checklist + PermissionChecker | T1 | [ ] |
 | T12 | Integration, hardening, manual test pass | all | [ ] |
@@ -139,7 +139,7 @@ Settings that fail `validate()` on read fall back to defaults (A12 in 01). Tests
 *Done 2026-10-12. `ReminderController` (controller/), `AndroidAlarmScheduler` and the receivers
 (platform/) are wired in `AppContainer`, with an app-scoped `appScope`. The `WakeDetector`,
 `Notifier` and `RingController` interfaces live in platform/ with no-op implementations
-(`NoOpWakeDetector`, `NoOpNotifier`, `NoOpRingController`) that T9, T7 and T8 replace.
+(`NoOpWakeDetector` (removed by T9), `NoOpNotifier`, `NoOpRingController`) that T9, T7 and T8 replace.
 `handle(event, expectedDayId)` drops stale notification actions (design §4). Settings changes
 tick via `AppContainer.tickOnSettingsChange()`. Assumptions A13–A16 in 01. The reboot check on
 the device is still open for the owner.*
@@ -186,6 +186,15 @@ Map raw events exactly as in the §6 table; `ACTIVITY_STOPPED` is dropped. Call
 - On the device, unlocking twice within the window triggers dose 1 within one poll interval.
 - A unit test of the raw-event mapping (a pure function from event type to `UsageEvt.Type?`)
   shows `ACTIVITY_STOPPED` and unknown types are dropped.
+
+*Done 2026-10-12. `UsageEventSource` (`mapEventType` is the pure mapping) and
+`AndroidWakeDetector` replace `NoOpWakeDetector`, which is removed. Adds PACKAGE_USAGE_STATS and a
+`<queries>` entry for the HOME intent (launcher lookup on API 30+). Each check is logged under tag
+`WakeDetect` and kept as a `DetectionLogEntry` (from, to, `WakeCheck?`; null check = Usage Access
+missing). **For T10:** `AppContainer.detectionLog: StateFlow<DetectionLogEntry?>` holds the last
+check (null before the first); render `entry.describe()` as monospace text at the bottom of
+Settings → Advanced, in debug builds only. Assumptions A30–A31 in 01. The on-device check
+(two unlocks within the window triggers dose 1 within one poll) is still open for the owner.*
 
 ## T10 — Main UI
 **Do:** Home (FR-6 and the Record-dose section FR-5), History (FR-7) and Settings (FR-8),
