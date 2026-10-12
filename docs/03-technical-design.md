@@ -4,8 +4,8 @@
 
 | Concern | Choice |
 |---------|--------|
-| Language | Kotlin 2.x, JDK 17 toolchain |
-| Build | Gradle Kotlin DSL + version catalog (`gradle/libs.versions.toml`). Use the Gradle wrapper. |
+| Language | Kotlin 2.x, bytecode target JVM 17. Builds on JDK 17+; CI uses 17. |
+| Build | Gradle Kotlin DSL + version catalog (`gradle/libs.versions.toml`). Use the Gradle wrapper. AGP 9 compiles Kotlin in `:app` through its built-in Kotlin support, so **don't apply `org.jetbrains.kotlin.android`**. Only the Compose compiler plugin is applied there. |
 | SDK levels | `minSdk = 33`, `compileSdk`/`targetSdk` = latest stable at implementation time |
 | UI | Jetpack Compose (BOM), Material 3, Navigation Compose |
 | Async | Kotlin coroutines + Flow |

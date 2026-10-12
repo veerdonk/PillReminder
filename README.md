@@ -4,7 +4,27 @@ A personal Android app that notices when I've woken up, reminds me to take my
 first pill, and then reminds me again for each following dose during the day.
 If I ignore a reminder, it turns into a snoozable alarm.
 
-**Status:** specification only. Nothing has been implemented yet.
+**Status:** project scaffold and CI are in place (task T1). The app itself is not implemented yet.
+
+## Install on the phone
+
+1. Open the latest successful **Android CI** run in the repo's Actions tab and download the
+   `PillReminder-debug-<sha>` artifact. It's a zip containing `app-debug.apk`.
+2. Copy the APK to the phone and open it. Allow "install unknown apps" for your file manager
+   or browser when Android asks.
+3. Later builds install over the previous one and keep your data. That works because every
+   build is signed with the same key, `app/debug.keystore`, which is committed on purpose. The
+   key isn't secret, which is fine for a personal sideloaded app, but don't reuse it for
+   anything published.
+
+## Build locally
+
+Requires JDK 17+ and the Android SDK (platform 37, build-tools 37.0.0), with `ANDROID_HOME`
+set or `sdk.dir` in `local.properties`.
+
+```
+./gradlew :core:test lint testDebugUnitTest assembleDebug
+```
 
 ## Documentation
 

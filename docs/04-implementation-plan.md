@@ -17,7 +17,7 @@ Wave 5:  T12 integration hardening + manual test pass
 
 | ID | Task | Depends on | Status |
 |----|------|-----------|--------|
-| T1 | Project scaffold + CI | — | [ ] |
+| T1 | Project scaffold + CI | — | [x] |
 | T2 | Core model, settings, TimeMath | T1 | [ ] |
 | T3 | Engine (reducer + outputs) | T2 | [ ] |
 | T4 | WakeRule | T2 | [ ] |
