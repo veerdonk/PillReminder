@@ -19,7 +19,7 @@ Wave 5:  T12 integration hardening + manual test pass
 |----|------|-----------|--------|
 | T1 | Project scaffold + CI | — | [x] |
 | T2 | Core model, settings, TimeMath | T1 | [x] |
-| T3 | Engine (reducer + outputs) | T2 | [ ] |
+| T3 | Engine (reducer + outputs) | T2 | [x] |
 | T4 | WakeRule | T2 | [ ] |
 | T5 | Data layer (settings, state, history) | T2 | [ ] |
 | T6 | Scheduler, receivers, ReminderController | T3, T5 | [ ] |
@@ -83,6 +83,9 @@ shared `Json` instance for persisting core types. See assumptions A6 and A7 in 0
 - A rollover-while-RINGING test records the doses as MISSED and gives a fresh day.
 - A backdated TookDose whose `at + interval < now` goes straight to REMINDER.
 - The engine has no Android imports and all logic uses the passed-in `now`/`zone`.
+
+*Done 2026-10-12. `Engine` lives in `core.engine`; tests are in `core/src/test/.../engine/`
+(one file per table, plus scenarios). See assumptions A8–A10 in 01.*
 
 ## T4 — WakeRule
 **Do:** implement `WakeRule.isAwake` (design §6) in `:core`.
