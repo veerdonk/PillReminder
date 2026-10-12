@@ -51,6 +51,7 @@ data class SettingsForm(
     val snoozeMinutes: String,
     val maxSnoozes: String,
     val ringMinutes: String,
+    val holdFirstAlarm: Boolean,
     val rollover: LocalTime,
     val alarmSoundUri: String?,
 ) {
@@ -92,6 +93,7 @@ data class SettingsForm(
             snoozeDuration = Duration.ofMinutes(snooze!!.toLong()),
             maxSnoozes = maxSnoozes!!,
             alarmRingDuration = Duration.ofMinutes(ring!!.toLong()),
+            holdFirstAlarmUntilFallback = holdFirstAlarm,
             dayRolloverTime = rollover,
             alarmSoundUri = alarmSoundUri,
         )
@@ -121,6 +123,7 @@ data class SettingsForm(
                 snoozeMinutes = s.snoozeDuration.toMinutes().toString(),
                 maxSnoozes = s.maxSnoozes.toString(),
                 ringMinutes = s.alarmRingDuration.toMinutes().toString(),
+                holdFirstAlarm = s.holdFirstAlarmUntilFallback,
                 rollover = s.dayRolloverTime,
                 alarmSoundUri = s.alarmSoundUri,
             )

@@ -49,6 +49,7 @@ class SettingsRepositoryTest {
         snoozeDuration = Duration.ofMinutes(60),
         maxSnoozes = 0,
         alarmRingDuration = Duration.ofMinutes(10),
+        holdFirstAlarmUntilFallback = false,
         dayRolloverTime = LocalTime.MIDNIGHT,
         alarmSoundUri = "content://media/internal/audio/media/42",
     )

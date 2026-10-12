@@ -3,6 +3,7 @@ package nl.veerdonk.pillreminder.data
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -78,6 +79,7 @@ class DataStoreSettingsRepository(
         p[Keys.SNOOZE_DURATION] = s.snoozeDuration.wholeMinutes()
         p[Keys.MAX_SNOOZES] = s.maxSnoozes
         p[Keys.ALARM_RING_DURATION] = s.alarmRingDuration.wholeMinutes()
+        p[Keys.HOLD_FIRST_ALARM] = s.holdFirstAlarmUntilFallback
         p[Keys.DAY_ROLLOVER] = s.dayRolloverTime.minuteOfDay()
         val uri = s.alarmSoundUri
         if (uri == null) p.remove(Keys.ALARM_SOUND_URI) else p[Keys.ALARM_SOUND_URI] = uri
@@ -101,6 +103,7 @@ class DataStoreSettingsRepository(
                 snoozeDuration = p[Keys.SNOOZE_DURATION]?.minutes() ?: d.snoozeDuration,
                 maxSnoozes = p[Keys.MAX_SNOOZES] ?: d.maxSnoozes,
                 alarmRingDuration = p[Keys.ALARM_RING_DURATION]?.minutes() ?: d.alarmRingDuration,
+                holdFirstAlarmUntilFallback = p[Keys.HOLD_FIRST_ALARM] ?: d.holdFirstAlarmUntilFallback,
                 dayRolloverTime = p[Keys.DAY_ROLLOVER]?.toLocalTime() ?: d.dayRolloverTime,
                 alarmSoundUri = p[Keys.ALARM_SOUND_URI],
             )
@@ -127,6 +130,7 @@ class DataStoreSettingsRepository(
         val SNOOZE_DURATION = intPreferencesKey("snooze_duration_minutes")
         val MAX_SNOOZES = intPreferencesKey("max_snoozes")
         val ALARM_RING_DURATION = intPreferencesKey("alarm_ring_duration_minutes")
+        val HOLD_FIRST_ALARM = booleanPreferencesKey("hold_first_alarm_until_fallback")
         val DAY_ROLLOVER = intPreferencesKey("day_rollover_time")
         val ALARM_SOUND_URI = stringPreferencesKey("alarm_sound_uri")
     }

@@ -89,6 +89,7 @@ data class Settings(
     val snoozeDuration: Duration = Duration.ofMinutes(10),
     val maxSnoozes: Int = 3,
     val alarmRingDuration: Duration = Duration.ofMinutes(2),
+    val holdFirstAlarmUntilFallback: Boolean = true, // FR-3.1a
     val dayRolloverTime: LocalTime = LocalTime.of(3, 0),
     val alarmSoundUri: String? = null,          // null = system default alarm
 ) {
@@ -386,7 +387,7 @@ type isn't enforced at runtime, but `targetSdk ≥ 34` requires it in the manife
 - **History:** a LazyColumn of days. Each row shows the date, wake time and source, and one chip
   per dose (✓ 07:52 · ✓ 11:50 · ✗ skipped · ! missed), plus the snooze count.
 - **Settings:** grouped into Wake detection (weekday/weekend times and detection thresholds),
-  Doses (count, interval), Alarm (escalation, snooze duration, max snoozes, ring duration, sound,
+  Doses (count, interval), Alarm (first alarm waits for fallback switch, escalation, snooze duration, max snoozes, ring duration, sound,
   Test alarm), and Advanced (poll interval, day rollover, Reset to defaults).
   - Durations use number fields in minutes; the interval uses an hours + minutes pair.
   - Validation errors are shown inline, and Save is disabled while any field is invalid.
