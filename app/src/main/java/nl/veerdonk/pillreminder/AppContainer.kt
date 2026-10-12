@@ -22,10 +22,11 @@ import nl.veerdonk.pillreminder.data.history.RoomHistoryRepository
 import nl.veerdonk.pillreminder.platform.AlarmScheduler
 import nl.veerdonk.pillreminder.platform.AndroidAlarmScheduler
 import nl.veerdonk.pillreminder.platform.AndroidNotifier
-import nl.veerdonk.pillreminder.platform.NoOpRingController
+import nl.veerdonk.pillreminder.platform.AndroidRingController
 import nl.veerdonk.pillreminder.platform.NoOpWakeDetector
 import nl.veerdonk.pillreminder.platform.Notifier
 import nl.veerdonk.pillreminder.platform.RingController
+import nl.veerdonk.pillreminder.platform.TestAlarm
 import nl.veerdonk.pillreminder.platform.WakeDetector
 import java.time.Clock
 import java.time.ZoneId
@@ -35,7 +36,7 @@ import java.time.ZoneId
  * a process-wide singleton: in particular there must be exactly one DataStore per file, since a
  * second one on the same file throws at runtime.
  *
- * The ring controller and wake detector are no-ops until T8 and T9 replace them.
+ * The wake detector is a no-op until T9 replaces it.
  */
 class AppContainer(appContext: Context) {
 
@@ -76,7 +77,12 @@ class AppContainer(appContext: Context) {
 
     val notifier: Notifier = AndroidNotifier(appContext)
 
-    val ringController: RingController = NoOpRingController // T8
+    private val androidRingController = AndroidRingController(appContext)
+
+    val ringController: RingController = androidRingController
+
+    /** The Settings screen's "Test alarm" button calls `testAlarm.startTestAlarm()` (design §8). */
+    val testAlarm: TestAlarm = androidRingController
 
     val wakeDetector: WakeDetector = NoOpWakeDetector // T9
 

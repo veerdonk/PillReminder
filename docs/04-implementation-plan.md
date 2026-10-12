@@ -24,7 +24,7 @@ Wave 5:  T12 integration hardening + manual test pass
 | T5 | Data layer (settings, state, history) | T2 | [x] |
 | T6 | Scheduler, receivers, ReminderController | T3, T5 | [x] |
 | T7 | Notifications + ActionReceiver | T2 | [x] |
-| T8 | Alarm ring service + AlarmActivity | T7 | [ ] |
+| T8 | Alarm ring service + AlarmActivity | T7 | [x] |
 | T9 | UsageEventSource + AndroidWakeDetector | T4 | [ ] |
 | T10 | Main UI: Home, Record dose, History, Settings | T5, T6 | [ ] |
 | T11 | Setup checklist + PermissionChecker | T1 | [ ] |
@@ -139,7 +139,8 @@ Settings that fail `validate()` on read fall back to defaults (A12 in 01). Tests
 *Done 2026-10-12. `ReminderController` (controller/), `AndroidAlarmScheduler` and the receivers
 (platform/) are wired in `AppContainer`, with an app-scoped `appScope`. The `WakeDetector`,
 `Notifier` and `RingController` interfaces live in platform/ with no-op implementations
-(`NoOpWakeDetector`, `NoOpNotifier`, `NoOpRingController`) that T9, T7 and T8 replace.
+(`NoOpWakeDetector`, `NoOpNotifier`, `NoOpRingController`) that T9, T7 and T8 replace
+(T7 and T8 have).
 `handle(event, expectedDayId)` drops stale notification actions (design §4). Settings changes
 tick via `AppContainer.tickOnSettingsChange()`. Assumptions A13–A16 in 01. The reboot check on
 the device is still open for the owner.*
@@ -174,6 +175,16 @@ AlarmActivity. Assumptions A17–A21 in 01. The on-device checks above are still
 - Snooze, Took it and Done all stop the ringing and close the activity.
 - The ring times out after `alarmRingDuration`, through the engine.
 - The Snooze button is hidden when no snoozes are left.
+
+*Done 2026-10-12. `AndroidRingController` (platform/) replaces `NoOpRingController`; it starts
+`AlarmRingService`, which does sound, vibration, the wake lock and the notification as in design
+§8. `AlarmActivity` (ui/alarm/) is the full-screen alarm, and `AndroidNotifier.ALARM_SCREEN` now
+points to it. The pure decisions are in `platform/RingLogic.kt` (`shouldPlaySound`, `ringChange`,
+`RingExtras`) and are unit tested. **Test alarm hook for T10:** `AppContainer.testAlarm`
+(`TestAlarm.startTestAlarm()` / `stopTestAlarm()`, implemented by `AndroidRingController`). It
+rings 10 s and doesn't touch the state. Adds the FOREGROUND_SERVICE, FOREGROUND_SERVICE_SYSTEM_EXEMPTED,
+WAKE_LOCK and VIBRATE permissions. Assumptions A22–A25 in 01. The on-device checks above, and the
+vibration-under-DND check from design §8, are still open for the owner.*
 
 ## T9 — UsageEventSource + AndroidWakeDetector
 **Do:** implement design §6 (Android side). Returns false when Usage Access is missing.

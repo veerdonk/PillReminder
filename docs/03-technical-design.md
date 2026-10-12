@@ -48,7 +48,9 @@ without the Android SDK.
       AlarmScheduler.kt         AlarmManager wrapper (§5)
       Notifier.kt               Channels + reminder notification (§7)
       AndroidNotifier.kt        Notifier on NotificationManager
-      RingController.kt         Starts/stops AlarmRingService
+      RingController.kt         RingController + TestAlarm interfaces
+      AndroidRingController.kt  Starts/stops AlarmRingService; implements TestAlarm
+      RingLogic.kt              Pure helpers: shouldPlaySound, ringChange, RingExtras
       AlarmRingService.kt       Foreground service: sound + vibration + wake lock (§8)
       UsageEventSource.kt       UsageStatsManager -> List<UsageEvt> (§6)
       AndroidWakeDetector.kt    UsageEventSource + WakeRule
@@ -324,7 +326,9 @@ type isn't enforced at runtime, but `targetSdk ≥ 34` requires it in the manife
   3. If `ringing != null`, call `ringController.ensureRinging`.
   4. Schedule `nextWakeAt`.
 - **"Test alarm"** (Settings) starts the service with a test flag. It rings for 10 s, doesn't touch
-  the state, and the AlarmActivity buttons just close it.
+  the state, and the AlarmActivity buttons just close it. The Settings screen calls it through
+  `AppContainer.testAlarm`, a `TestAlarm` with `startTestAlarm()` and `stopTestAlarm()`
+  (platform/RingController.kt, implemented by `AndroidRingController`). Details in 01 A22.
 
 **`AlarmActivity`:**
 - `setShowWhenLocked(true)`, `setTurnScreenOn(true)`, `excludeFromRecents`,

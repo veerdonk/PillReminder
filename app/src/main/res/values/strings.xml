@@ -19,4 +19,10 @@
         <item quantity="one">Snooze (%1$d left)</item>
         <item quantity="other">Snooze (%1$d left)</item>
     </plurals>
+
+    <!-- Alarm screen (FR-3.2) and Settings "Test alarm" (design §8) -->
+    <string name="alarm_pill_progress">Pill %1$d of %2$d</string>
+    <string name="alarm_took">Took it</string>
+    <string name="alarm_test_title">Test alarm</string>
+    <string name="alarm_test_text">This is only a test. Nothing is recorded.</string>
 </resources>

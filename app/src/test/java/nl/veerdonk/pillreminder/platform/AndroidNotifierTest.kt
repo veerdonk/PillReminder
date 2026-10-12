@@ -12,6 +12,7 @@ import nl.veerdonk.pillreminder.core.model.ReminderSubtitle
 import nl.veerdonk.pillreminder.core.model.RingSpec
 import nl.veerdonk.pillreminder.platform.receivers.ActionReceiver
 import nl.veerdonk.pillreminder.ui.MainActivity
+import nl.veerdonk.pillreminder.ui.alarm.AlarmActivity
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -192,8 +193,7 @@ class AndroidNotifierTest {
         assertEquals("Time for pill 2 of 3", n.title)
         val fullScreen = shadowOf(n.fullScreenIntent)
         assertTrue(fullScreen.isActivity)
-        // MainActivity until T8 adds AlarmActivity.
-        assertEquals(MainActivity::class.java.name, fullScreen.savedIntent.component?.className)
+        assertEquals(AlarmActivity::class.java.name, fullScreen.savedIntent.component?.className)
         assertEquals(n.fullScreenIntent, n.contentIntent)
     }
 

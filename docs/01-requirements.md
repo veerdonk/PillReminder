@@ -299,3 +299,16 @@ Open:
 - **A21** (T7) Without the notification permission, `showReminder` posts nothing and doesn't
   fail, and the state still advances. The setup checklist (T11) and
   the Home banner (FR-6.3) are where a missing permission is surfaced.
+- **A22** (T8) The Settings "Test alarm" rings with the current sound settings and the normal
+  quiet rules (silent/DND: vibration only) for 10 s. Its notification has no buttons (the real
+  ones would act on a dose that doesn't exist), and its screen shows "Test alarm" above a sample
+  "Pill 1 of M" with all three buttons, which only close it. The engine's `ensureStopped` never
+  stops a test alarm, and a test is ignored while a real alarm rings.
+- **A23** (T8) AlarmActivity shows only what `Engine.outputs` says rings for the dose it was
+  opened for. Opened for a dose that no longer rings (an old notification tap), it closes at once.
+  It runs in its own task (`taskAffinity=""`), so closing it never exposes the main app.
+- **A24** (T8) If the chosen alarm sound can't be played (e.g. the file was removed), the service
+  tries the default alarm sound, then the default ringtone. If none plays, the alarm still
+  vibrates and shows the screen.
+- **A25** (T8) The ring service's own safety stop (`alarmRingDuration` + 1 min) only matters if
+  the engine's `ringEndAt` wake-up is lost. It stops the sound but leaves the state to the next Tick.

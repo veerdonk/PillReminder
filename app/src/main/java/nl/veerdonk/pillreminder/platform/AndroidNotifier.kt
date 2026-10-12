@@ -20,6 +20,7 @@ import nl.veerdonk.pillreminder.core.model.ReminderSubtitle
 import nl.veerdonk.pillreminder.core.model.RingSpec
 import nl.veerdonk.pillreminder.platform.receivers.ActionReceiver
 import nl.veerdonk.pillreminder.ui.MainActivity
+import nl.veerdonk.pillreminder.ui.alarm.AlarmActivity
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -165,11 +166,8 @@ class AndroidNotifier(
         /** Shared by the reminder and the alarm (the ring service's foreground notification). */
         const val NOTIFICATION_ID = 1001
 
-        /**
-         * Full-screen and content target of the alarm notification.
-         * T8: replace with `AlarmActivity::class.java` once it exists.
-         */
-        private val ALARM_SCREEN: Class<out Activity> = MainActivity::class.java
+        /** Full-screen and content target of the alarm notification. */
+        private val ALARM_SCREEN: Class<out Activity> = AlarmActivity::class.java
 
         private const val REQUEST_CONTENT = 100
         private const val REQUEST_ALARM_SCREEN = 101
