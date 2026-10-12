@@ -72,7 +72,7 @@ evaluation time.
 | `nextRolloverAt(day)` | `(day + 1)` at `dayRolloverTime`, in `tz` |
 | `lastTakenAt` | `takenAt` of the dose `nextDose − 1` (null for dose 1) |
 | `dueAt` | `lastTakenAt + S.doseInterval` (WAITING only) |
-| `escalateAt` | `reminderShownAt + S.escalationDelay`; for `nextDose == 1`, `max(that, fallbackAt(dayId))` (FR-3.1a) |
+| `escalateAt` | `reminderShownAt + S.escalationDelay`; for `nextDose == 1` and `S.holdFirstAlarmUntilFallback`, `max(that, fallbackAt(dayId))` (FR-3.1a) |
 | `ringEndAt` | `ringingSince + S.alarmRingDuration` |
 | `snoozeEndAt` | `snoozedAt + S.snoozeDuration` |
 | `canSnooze` | `snoozesUsed < S.maxSnoozes` |

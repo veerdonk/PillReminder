@@ -297,10 +297,10 @@ object Engine {
 
     private fun dueAt(state: DayState, s: Settings): Instant? = lastTakenAt(state)?.plus(s.doseInterval)
 
-    /** Dose 1 never rings before the day's fallback time, however early wake was detected (FR-3.1a). */
+    /** If enabled, dose 1 never rings before the day's fallback time, however early wake was detected (FR-3.1a). */
     private fun escalateAt(state: DayState, s: Settings, zone: ZoneId): Instant? {
         val afterDelay = state.reminderShownAt?.plus(s.escalationDelay) ?: return null
-        if (state.nextDose != 1) return afterDelay
+        if (state.nextDose != 1 || !s.holdFirstAlarmUntilFallback) return afterDelay
         return maxOf(afterDelay, TimeMath.fallbackAt(state.dayId, s, zone))
     }
 

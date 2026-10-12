@@ -137,6 +137,14 @@ class EngineTickTest {
     }
 
     @Test
+    fun `dose 1 REMINDER rings after escalationDelay when the hold is off`() {
+        val off = DEFAULTS.copy(holdFirstAlarmUntilFallback = false)
+        val state = reminder(dose = 1, shownAt = t("07:25"))
+        assertEquals(state, step(state, tick, t("07:39:59"), off))
+        assertEquals(state.copy(phase = Phase.RINGING, ringingSince = t("07:40")), step(state, tick, t("07:40"), off))
+    }
+
+    @Test
     fun `dose 1 REMINDER shown close to fallback still waits escalationDelay`() {
         val state = reminder(dose = 1, shownAt = t("10:20"))
         assertEquals(state, step(state, tick, t("10:34:59")))

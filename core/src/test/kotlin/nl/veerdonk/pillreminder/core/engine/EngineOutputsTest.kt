@@ -63,6 +63,12 @@ class EngineOutputsTest {
     }
 
     @Test
+    fun `dose 1 REMINDER wakes at escalateAt when the hold is off`() {
+        val off = DEFAULTS.copy(holdFirstAlarmUntilFallback = false)
+        assertEquals(t("07:40"), outputs(reminder(shownAt = t("07:25")), t("07:25"), off).nextWakeAt)
+    }
+
+    @Test
     fun `dose 1 REMINDER close to fallback still waits escalationDelay`() {
         assertEquals(t("10:35"), outputs(reminder(shownAt = t("10:20")), t("10:20")).nextWakeAt)
     }

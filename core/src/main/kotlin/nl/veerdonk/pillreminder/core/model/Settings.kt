@@ -26,6 +26,7 @@ data class Settings(
     val snoozeDuration: Duration = Duration.ofMinutes(10),
     val maxSnoozes: Int = 3,
     val alarmRingDuration: Duration = Duration.ofMinutes(2),
+    val holdFirstAlarmUntilFallback: Boolean = true, // FR-3.1a
     val dayRolloverTime: LocalTime = LocalTime.of(3, 0),
     val alarmSoundUri: String? = null, // null = system default alarm
 ) {

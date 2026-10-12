@@ -61,7 +61,8 @@ settings to make the app reliable (see `06-device-setup-oneplus.md`).
 ### FR-3 Escalation to alarm
 - **FR-3.1** If neither reminder button is tapped within `escalationDelay` (default **15 min**)
   of the reminder appearing, the app raises the **alarm** for that dose.
-- **FR-3.1a** The **dose 1** alarm never rings before that day's `fallbackTime`. When wake is
+- **FR-3.1a** If `holdFirstAlarmUntilFallback` is on (the default), the **dose 1** alarm never
+  rings before that day's `fallbackTime`. When wake is
   detected early, the dose 1 reminder still appears immediately (FR-1.4), but it only escalates
   at `fallbackTime`, or `escalationDelay` after it appeared if that is later (A57).
 - **FR-3.2** The alarm is a full-screen activity, shown over the lock screen with the screen
@@ -156,6 +157,7 @@ alarms are recomputed where the spec defines them in terms of the setting (see s
 | `snoozeDuration` | 10 min | 1–60 min | |
 | `maxSnoozes` | 3 | 0–10 | 0 = no snooze button |
 | `alarmRingDuration` | 2 min | 1–10 min | |
+| `holdFirstAlarmUntilFallback` | on | on/off | FR-3.1a. Off: dose 1 escalates after `escalationDelay` like other doses. |
 | `dayRolloverTime` | 03:00 | 00:00–06:00 and < both earliest times | Advanced setting |
 | `alarmSound` | System default alarm | Ringtone picker | Nice-to-have |
 
@@ -368,4 +370,5 @@ Open:
   dose 1 however its reminder appeared (detected, Remind me now, Resume today), and it is
   derived, not stored: `escalateAt = max(reminderShownAt + escalationDelay, fallbackAt(dayId))`
   for dose 1. A reminder shown at or after the fallback time escalates after `escalationDelay`
-  as before. Doses 2 and later are unchanged.
+  as before. Doses 2 and later are unchanged. It is a switch in Settings → Alarm
+  (`holdFirstAlarmUntilFallback`, default on); off restores the plain FR-3.1 behaviour.
