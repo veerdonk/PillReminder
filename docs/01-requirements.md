@@ -246,3 +246,13 @@ Open:
   The default 03:00 rollover is not affected.
 - **A7** (T2) Duration settings must be whole minutes (they are stored in minutes, design §3.1);
   `validate()` reports anything else as an error.
+- **A11** (T4) Usage-log cases design §6 leaves open, resolved toward FR-1.3 ("foreground use"
+  means the phone is actually being used) and FR-1.6 (no false wake-ups):
+  - **APP_RESUMED twice for the same package with no pause between** (e.g. one activity resumes
+    another) keeps the first start: the app is treated as in the foreground the whole time.
+  - **SCREEN_OFF** ends every open foreground interval at that moment, since nobody uses an app
+    with the screen off. It does not affect unlock counting.
+  - "APP_PAUSED with no preceding RESUMED" means a package whose *first* event in the list is a
+    pause (it was already open before the list starts). A pause after an interval has already
+    closed (e.g. ACTIVITY_PAUSED then ACTIVITY_STOPPED, both mapped to APP_PAUSED) adds nothing.
+  - Events with the same timestamp are processed in input order (the usage log's order).
