@@ -49,6 +49,8 @@ T6 uses a no-op/fake implementation and the owning task wires the real one into 
 **Accept when:**
 - CI is green.
 - The APK artifact installs on Android 13 and opens to the placeholder screen.
+
+*Done 2026-10-12. CI run #1 green; the owner confirmed the APK opens to the placeholder screen on the OnePlus 8.*
 - `./gradlew :core:test` runs (with a trivial test).
 
 ## T2 — Core model, settings, TimeMath

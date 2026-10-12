@@ -18,7 +18,9 @@ lives in `docs/`. Read the docs in this order before writing code:
 - **Write unit tests for every row of the transition table** in `02-state-machine.md` (task T3).
 - **Before pushing, run** `./gradlew :core:test lint testDebugUnitTest assembleDebug`. Lint
   must stay free of warnings.
-- **Local Android SDK:** cloud containers don't ship one. Install it with:
+- **Local Android SDK:** in Claude Code cloud sessions the SessionStart hook
+  (`.claude/hooks/session-start.sh`) installs it automatically and warms the Gradle cache. To do it
+  by hand:
   - download `commandlinetools-linux-*_latest.zip` from `dl.google.com/android/repository/`
     into `/opt/android-sdk/cmdline-tools/latest`
   - `yes | sdkmanager --licenses`
