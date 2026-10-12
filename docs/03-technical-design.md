@@ -27,11 +27,12 @@ without the Android SDK.
 ```
 :core   (kotlin("jvm") — NO Android dependencies)
   nl.veerdonk.pillreminder.core
-    model/       Settings, DayState, DoseRecord, enums, Outputs, ReminderSpec, RingSpec
-    time/        TimeMath: dayIdOf, earliestAt, fallbackAt, nextRolloverAt, isWeekend
+    model/       Settings, DayState, DoseRecord, enums, Event, Transition, Outputs, ReminderSpec, RingSpec
+    time/        TimeMath: dayIdOf, startOfDay, earliestAt, fallbackAt, nextRolloverAt, isWeekend
     engine/      Engine.reduce(), Engine.outputs()           (02-state-machine.md)
     wake/        UsageEvt, WakeRule.isAwake()                 (§6)
-    serial/      kotlinx.serialization serializers for Instant/LocalDate/LocalTime/Duration
+    serial/      kotlinx.serialization serializers for Instant/LocalDate/LocalTime/Duration (ISO-8601
+                 strings), and CoreJson, the shared Json config (ignoreUnknownKeys, encodeDefaults)
 
 :app    (com.android.application, depends on :core)
   nl.veerdonk.pillreminder

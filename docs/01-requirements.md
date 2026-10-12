@@ -220,6 +220,13 @@ Confirmed by the owner:
 - **A4 ✓** A timed-out ring counts as a snooze (FR-3.4/3.6).
 - **A5 ✓** The *reminder notification* has no snooze button. Snooze is only on the alarm.
 
-Open:
-- *(none yet)*
   This matches the owner's description: the reminder has 2 buttons.
+
+Open:
+- **A6** (T2) `dayIdOf` is defined as "the day `d` with `startOfDay(d) ≤ now < startOfDay(d+1)`".
+  This equals the formula in 02 §2 except when `dayRolloverTime` falls inside a DST gap or overlap
+  (e.g. a 02:30 rollover in `Europe/Amsterdam`). There, a gap moves the rollover forward to
+  03:30, and in an overlap the first 02:30 starts the new day, so the day never jumps back.
+  The default 03:00 rollover is not affected.
+- **A7** (T2) Duration settings must be whole minutes (they are stored in minutes, design §3.1);
+  `validate()` reports anything else as an error.

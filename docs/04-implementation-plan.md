@@ -18,7 +18,7 @@ Wave 5:  T12 integration hardening + manual test pass
 | ID | Task | Depends on | Status |
 |----|------|-----------|--------|
 | T1 | Project scaffold + CI | — | [x] |
-| T2 | Core model, settings, TimeMath | T1 | [ ] |
+| T2 | Core model, settings, TimeMath | T1 | [x] |
 | T3 | Engine (reducer + outputs) | T2 | [ ] |
 | T4 | WakeRule | T2 | [ ] |
 | T5 | Data layer (settings, state, history) | T2 | [ ] |
@@ -67,6 +67,9 @@ T6 uses a no-op/fake implementation and the owning task wires the real one into 
 - a DST spring-forward and fall-back day in `Europe/Amsterdam`
 - validation errors
 - a JSON round-trip of `DayState`
+
+*Done 2026-10-12. `Event`/`Transition` live in `core.model`; `CoreJson` (in `core.serial`) is the
+shared `Json` instance for persisting core types. See assumptions A6 and A7 in 01.*
 
 ## T3 — Engine
 **Do:** implement `Engine.reduce`, `Engine.outputs` and `Engine.fresh` exactly as in
