@@ -140,7 +140,7 @@ was not run, it runs detection and ticks once more. The engine itself never does
 ### 4.1 Always first: rollover check (for every event)
 | Condition | Result |
 |-----------|--------|
-| `dayIdOf(now) != state.dayId` | Finalise the old day: if phase ≠ DONE, every dose from `nextDose..M` not yet in `doses` is recorded as `MISSED`. The current dose's record carries `snoozesUsed` and `firstRemindedAt`. Return `finishedDay = finalised old state`. Continue processing the event against `fresh(dayIdOf(now))`. User events that target a dose (TookDose/SkipRest/Snooze) are ignored after a rollover, because they were stale. Tick proceeds normally. |
+| `dayIdOf(now) != state.dayId` | Finalise the old day: if phase ≠ DONE, every dose from `nextDose..M` not yet in `doses` is recorded as `MISSED`. The current dose's record carries `snoozesUsed` and `firstRemindedAt`. The finalised day becomes DONE with its per-dose fields cleared (A10). Return `finishedDay = finalised old state`. Continue processing the event against `fresh(dayIdOf(now))`. User events that target a dose (TookDose/SkipRest/Snooze) are ignored after a rollover, because they were stale. Tick proceeds normally. |
 
 ### 4.2 Tick (repeat until the phase stops changing, max 10 iterations)
 | Phase | Condition | New phase | Side changes |
@@ -154,6 +154,12 @@ was not run, it runs detection and ticks once more. The engine itself never does
 | RINGING | `now ≥ ringEndAt` and `!canSnooze` | PENDING_SILENT | `ringingSince = null` |
 | SNOOZED | `now ≥ snoozeEndAt` | RINGING | `ringingSince = now` |
 | PENDING_SILENT, DONE | — | unchanged | — |
+
+`wakeDetected` only counts if the phase was already DETECTING when the event arrived; it is
+ignored in the Tick that moves BEFORE_WINDOW → DETECTING (A10).
+
+**Corrupt states (A10):** if the base timestamp of REMINDER, RINGING or SNOOZED is null, the
+Tick sets it to `now` and stays in that phase. WAITING with no `lastTakenAt` goes to REMINDER.
 
 Note: when a deadline was missed by a long time (phone off), we do **not** replay the missed
 steps. The engine enters the next phase with `now` as the new base timestamp. For example, if
@@ -169,15 +175,15 @@ or alarm PendingIntent carries `dayId` and `dose`, and the orchestrator drops in
 | Event | Valid when | Result |
 |-------|-----------|--------|
 | `TookDose(n, at, src)` | `phase ≠ DONE`, `n == nextDose`, `at ≤ now`, `at ≥ (lastTakenAt ?: startOfDay)` | Append `DoseRecord(n, TAKEN, at, src, snoozesUsed, firstRemindedAt)`. If `n == 1` and `wakeAt == null`: `wakeAt = at`, `wakeSource = MANUAL`. If `n == M` → DONE. Else → WAITING with `nextDose = n+1`. Clear the per-dose fields (`reminderShownAt`, `firstRemindedAt`, `ringingSince`, `snoozedAt`, `snoozesUsed = 0`). **Then run Tick**: a backdated dose may already be due. |
-| `SkipRest(n)` | `phase ≠ DONE`, `n == nextDose` | For each dose `n..M`, append `SKIPPED`. The record for `n` carries `snoozesUsed` and `firstRemindedAt`. → DONE. |
+| `SkipRest(n)` | `phase ≠ DONE`, `n == nextDose` | For each dose `n..M`, append `SKIPPED`. The record for `n` carries `snoozesUsed` and `firstRemindedAt`. → DONE, with the per-dose fields cleared. |
 | `Snooze(n)` | `phase == RINGING`, `n == nextDose`, `canSnooze` | → SNOOZED, `snoozedAt = now`, `snoozesUsed += 1`, `ringingSince = null` |
 | `RemindNow` | `phase ∈ {BEFORE_WINDOW, DETECTING, WAITING, PENDING_SILENT}` | → REMINDER, `reminderShownAt = now`, `firstRemindedAt ?: now`. If `nextDose == 1` and `wakeAt == null`: `wakeAt = now`, `wakeSource = MANUAL`. Snooze count is kept. |
-| `ResumeDay` | `phase == DONE` and `doses` contains at least one `SKIPPED` | Remove all `SKIPPED` records, set `nextDose` to the lowest removed index, then → REMINDER with fresh per-dose fields and `reminderShownAt = now`. |
+| `ResumeDay` | `phase == DONE` and `doses` contains at least one `SKIPPED` | Remove all `SKIPPED` records, set `nextDose` to the lowest removed index, then → REMINDER with fresh per-dose fields, `reminderShownAt = now` and `firstRemindedAt = now`. If the new `nextDose == 1` and `wakeAt == null`: `wakeAt = now`, `wakeSource = MANUAL` (A8). |
 
 Here `M` = `S.dosesPerDay`, read at evaluation time. If `dosesPerDay` is lowered below
 `nextDose` during a day, the next Tick treats the day as complete: the phase becomes DONE, and
-no doses are recorded as missed or skipped. Add this as a Tick rule that applies to any phase
-other than DONE.
+no doses are recorded as missed or skipped, and the per-dose fields are cleared. Add this as a
+Tick rule that applies to any phase other than DONE.
 
 `startOfDay` = `dayId` at `dayRolloverTime`.
 
@@ -189,7 +195,11 @@ data class Outputs(
     val ringing: RingSpec?,        // alarm must be ringing, or null = must be stopped
     val nextWakeAt: Instant,       // exact alarm to schedule
 )
-data class ReminderSpec(val dayId: LocalDate, val dose: Int, val doseCount: Int, val alarmStyle: Boolean, val canSnooze: Boolean, val snoozesLeft: Int, val subtitle: String?)
+data class ReminderSpec(val dayId: LocalDate, val dose: Int, val doseCount: Int, val alarmStyle: Boolean, val canSnooze: Boolean, val snoozesLeft: Int, val subtitle: ReminderSubtitle?)
+sealed interface ReminderSubtitle {                 // worded by :app from strings.xml (A9)
+    data class Snoozed(val until: Instant) : ReminderSubtitle   // "Snoozed until HH:MM", device zone
+    data object AlarmStopped : ReminderSubtitle                  // "Alarm stopped — please take your pill"
+}
 data class RingSpec(val dayId: LocalDate, val dose: Int, val doseCount: Int, val canSnooze: Boolean, val snoozesLeft: Int)
 
 fun outputs(state: DayState, s: Settings, now: Instant, zone: ZoneId): Outputs
@@ -202,8 +212,8 @@ fun outputs(state: DayState, s: Settings, now: Instant, zone: ZoneId): Outputs
 | WAITING | null | null | `dueAt` |
 | REMINDER | normal style | null | `escalateAt` |
 | RINGING | alarm style (with Snooze if `canSnooze`) | RingSpec | `ringEndAt` |
-| SNOOZED | normal style, subtitle "Snoozed until HH:MM" | null | `snoozeEndAt` |
-| PENDING_SILENT | normal style, subtitle "Alarm stopped — please take your pill" | null | `nextRolloverAt` |
+| SNOOZED | normal style, subtitle `Snoozed(snoozeEndAt)` ("Snoozed until HH:MM") | null | `snoozeEndAt` |
+| PENDING_SILENT | normal style, subtitle `AlarmStopped` ("Alarm stopped — please take your pill") | null | `nextRolloverAt` |
 | DONE | null | null | `nextRolloverAt` |
 
 If `nextWakeAt ≤ now` (an overdue deadline that the Tick loop didn't resolve, which shouldn't

@@ -27,7 +27,7 @@ without the Android SDK.
 ```
 :core   (kotlin("jvm") — NO Android dependencies)
   nl.veerdonk.pillreminder.core
-    model/       Settings, DayState, DoseRecord, enums, Event, Transition, Outputs, ReminderSpec, RingSpec
+    model/       Settings, DayState, DoseRecord, enums, Event, Transition, Outputs, ReminderSpec, ReminderSubtitle, RingSpec
     time/        TimeMath: dayIdOf, startOfDay, earliestAt, fallbackAt, nextRolloverAt, isWeekend
     engine/      Engine.reduce(), Engine.outputs()           (02-state-machine.md)
     wake/        UsageEvt, WakeRule.isAwake()                 (§6)
@@ -243,7 +243,8 @@ notification is ever visible.
   category `REMINDER`.
 - Content intent → `MainActivity`.
 - Title "Time for pill N of M", text "Tap a button below once you've decided." with the optional
-  subtitle from `ReminderSpec`.
+  subtitle from `ReminderSpec`. `ReminderSubtitle` is typed (A9): word it from `strings.xml`, and
+  format `Snoozed.until` as HH:MM in the device's current zone.
 - Actions:
   - "I took my pill" → `ActionReceiver` (`ACTION_TOOK`)
   - "Not today" (dose 1) / "I'm done for today" (later doses) → `ActionReceiver` (`ACTION_SKIP`)

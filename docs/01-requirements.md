@@ -221,6 +221,22 @@ Confirmed by the owner:
 - **A5 ✓** The *reminder notification* has no snooze button. Snooze is only on the alarm.
 
   This matches the owner's description: the reminder has 2 buttons.
+- **A8 ✓** (T3) `ResumeDay` follows FR-5.5 ("as if Remind me now had been tapped"): when it
+  re-opens dose 1 and `wakeAt` is null, it sets `wakeAt = now`, `wakeSource = MANUAL`. It also
+  sets `firstRemindedAt = now`, because REMINDER is entered for that dose with fresh per-dose fields.
+- **A9 ✓** (T3) To keep UI text in `strings.xml` (NFR-5), `ReminderSpec.subtitle` is a typed
+  `ReminderSubtitle` (`Snoozed(until: Instant)` / `AlarmStopped`) instead of English text.
+  `:app` words it and formats `until` as HH:MM in the device zone (02 §5, design §7).
+- **A10 ✓** (T3) Cases the spec left open:
+  - A missing base timestamp (a corrupt state, e.g. REMINDER with `reminderShownAt == null`) is
+    repaired on the next Tick by setting it to `now`, so that phase's timer restarts. WAITING
+    with no previous dose time shows the reminder at once. Until then, `outputs` schedules a
+    wake-up 1 s from now so the repair Tick happens.
+  - `Tick(wakeDetected = true)` only counts if the day was already DETECTING when the event
+    arrived. It is ignored in the same Tick that leaves BEFORE_WINDOW (02 §6, FR-1.6).
+  - Every DONE state has its per-dose fields cleared: on the last TookDose, on SkipRest and when
+    `dosesPerDay` is lowered. The rollover's finished day is also set to DONE with those fields
+    cleared, so history only sees one shape of finished day.
 
 Open:
 - **A6** (T2) `dayIdOf` is defined as "the day `d` with `startOfDay(d) ≤ now < startOfDay(d+1)`".
