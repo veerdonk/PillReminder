@@ -167,8 +167,10 @@ interface HistoryRepository { fun days(): Flow<List<DayWithDoses>>; suspend fun 
 data class DayWithDoses(val dayId: LocalDate, val wakeAt: Instant?, val wakeSource: WakeSource?,
                         val finalPhase: Phase, val updatedAt: Instant, val doses: List<DoseRecord>)
 
-class ReminderController(/* all of the above + Clock */) {
-    suspend fun handle(event: Event)          // see 02 §6
+class ReminderController(/* all of the above + Clock + zone: () -> ZoneId */) {
+    // see 02 §6. With expectedDayId set (notification actions, §7), the event is dropped unless
+    // it equals the dayId after the rollover check, i.e. dayIdOf(now) (01 A15).
+    suspend fun handle(event: Event, expectedDayId: LocalDate? = null)
     suspend fun tick() = handle(Event.Tick(false))   // wakeDetected filled in internally
 }
 ```
@@ -275,8 +277,8 @@ notification is ever visible.
 
 **PendingIntent extras:** every action carries `EXTRA_DAY_ID` (ISO date) and `EXTRA_DOSE`.
 Request codes must be unique per action type, so the PIs don't overwrite each other. Use
-`FLAG_IMMUTABLE`. `ActionReceiver` drops the intent if `dayId` doesn't match the current state,
-then forwards it as `TookDose(dose, now, NOTIFICATION or ALARM)`, `SkipRest(dose)` or `Snooze(dose)`.
+`FLAG_IMMUTABLE`. `ActionReceiver` passes `dayId` as `expectedDayId` to
+`ReminderController.handle`, which drops the event if it doesn't match the current day (§4), and forwards it as `TookDose(dose, now, NOTIFICATION or ALARM)`, `SkipRest(dose)` or `Snooze(dose)`.
 
 ## 8. Alarm ringing
 

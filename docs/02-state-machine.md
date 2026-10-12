@@ -222,12 +222,14 @@ happen), schedule it for `now + 1 s`.
 ## 6. Orchestration (Android side, described here for completeness)
 
 ```
-handle(event):
+handle(event, expectedDayId = null):
     mutex.withLock {
+        if (expectedDayId != null && expectedDayId != dayIdOf(now)) return   // stale action (01 A15)
         state = stateStore.load() ?: fresh(dayIdOf(now))
-        detected = if (event is Tick && state.phase == DETECTING) wakeDetector.isAwake(...) else false
+        detectNow = event is Tick && state.phase == DETECTING && state.dayId == dayIdOf(now)   // 01 A13
+        detected = if (detectNow) wakeDetector.isAwake(...) else false
         t = reduce(state, event-with-detected, settings, now)
-        if (t.state.phase == DETECTING && event is Tick && state.phase != DETECTING):
+        if (t.state.phase == DETECTING && event is Tick && !detectNow):
             t = reduce(t.state, Tick(wakeDetector.isAwake(...)), settings, now)   // see §4 note
         t.finishedDay?.let { history.upsert(it) }
         stateStore.save(t.state)

@@ -15,6 +15,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import kotlinx.coroutines.launch
+import nl.veerdonk.pillreminder.PillReminderApp
 import nl.veerdonk.pillreminder.R
 import nl.veerdonk.pillreminder.ui.theme.PillReminderTheme
 
@@ -27,6 +29,13 @@ class MainActivity : ComponentActivity() {
                 PlaceholderScreen()
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // On the app scope, so leaving the screen doesn't cancel a tick halfway.
+        val container = (application as PillReminderApp).container
+        container.appScope.launch { container.reminderController.tick() }
     }
 }
 
