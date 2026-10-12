@@ -97,7 +97,8 @@ minutes and times as minute-of-day. Invalid input is rejected in the UI and neve
 
 ### 3.2 Day state
 Defined in `02-state-machine.md` §2. It is persisted as JSON in its own DataStore file,
-`day_state.json`. If the JSON is missing or can't be parsed, start with `fresh(dayIdOf(now))`.
+`day_state.json`. If the JSON is missing or can't be parsed, `StateStore` returns `null` (it never
+throws for it) and the caller starts with `fresh(dayIdOf(now))`.
 
 ### 3.3 History (Room)
 ```
@@ -116,6 +117,8 @@ dose_log (day_id TEXT, dose_index INTEGER,
 `HistoryRepository.upsert(day: DayState)` writes the `day_log` row and *replaces* all `dose_log`
 rows for that day with `day.doses`, in one transaction. The History UI shows doses that have no
 row yet as "pending/upcoming", but only for today.
+Times are stored as epoch millis and enums by name; `updated_at` comes from the injected `Clock`.
+The exported schema JSON is committed under `app/schemas`. History is never pruned (FR-7.2).
 
 ## 4. Key interfaces (contracts for parallel work)
 
@@ -159,6 +162,10 @@ interface RingController { fun ensureRinging(spec: RingSpec); fun ensureStopped(
 interface StateStore { val state: Flow<DayState?>; suspend fun load(): DayState?; suspend fun save(s: DayState) }
 interface SettingsRepository { val settings: Flow<Settings>; suspend fun current(): Settings; suspend fun update(s: Settings) }
 interface HistoryRepository { fun days(): Flow<List<DayWithDoses>>; suspend fun upsert(day: DayState) }
+// days() is newest first. DayWithDoses (data/history) is a day_log row plus its dose_log rows
+// as core DoseRecords, ordered by index. Instants have millisecond precision.
+data class DayWithDoses(val dayId: LocalDate, val wakeAt: Instant?, val wakeSource: WakeSource?,
+                        val finalPhase: Phase, val updatedAt: Instant, val doses: List<DoseRecord>)
 
 class ReminderController(/* all of the above + Clock */) {
     suspend fun handle(event: Event)          // see 02 §6

@@ -256,3 +256,9 @@ Open:
     pause (it was already open before the list starts). A pause after an interval has already
     closed (e.g. ACTIVITY_PAUSED then ACTIVITY_STOPPED, both mapped to APP_PAUSED) adds nothing.
   - Events with the same timestamp are processed in input order (the usage log's order).
+- **A12** (T5) Stored settings that don't pass `validate()` (e.g. after a downgrade to a build
+  with narrower ranges, or an out-of-range minute-of-day) are not repaired field by field: the
+  whole `Settings` object falls back to the `Settings()` defaults. The stored values are left
+  as they are until the next save, which overwrites them. An unreadable settings file is also
+  read as defaults. `SettingsRepository.update` throws `IllegalArgumentException` for invalid
+  settings and writes nothing.
