@@ -21,7 +21,7 @@ import nl.veerdonk.pillreminder.data.history.HistoryRepository
 import nl.veerdonk.pillreminder.data.history.RoomHistoryRepository
 import nl.veerdonk.pillreminder.platform.AlarmScheduler
 import nl.veerdonk.pillreminder.platform.AndroidAlarmScheduler
-import nl.veerdonk.pillreminder.platform.NoOpNotifier
+import nl.veerdonk.pillreminder.platform.AndroidNotifier
 import nl.veerdonk.pillreminder.platform.NoOpRingController
 import nl.veerdonk.pillreminder.platform.NoOpWakeDetector
 import nl.veerdonk.pillreminder.platform.Notifier
@@ -35,7 +35,7 @@ import java.time.ZoneId
  * a process-wide singleton: in particular there must be exactly one DataStore per file, since a
  * second one on the same file throws at runtime.
  *
- * The notifier, ring controller and wake detector are no-ops until T7, T8 and T9 replace them.
+ * The ring controller and wake detector are no-ops until T8 and T9 replace them.
  */
 class AppContainer(appContext: Context) {
 
@@ -74,7 +74,7 @@ class AppContainer(appContext: Context) {
 
     val alarmScheduler: AlarmScheduler = AndroidAlarmScheduler(appContext)
 
-    val notifier: Notifier = NoOpNotifier // T7
+    val notifier: Notifier = AndroidNotifier(appContext)
 
     val ringController: RingController = NoOpRingController // T8
 

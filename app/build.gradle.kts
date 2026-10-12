@@ -44,6 +44,11 @@ android {
     buildFeatures {
         compose = true
     }
+
+    // Robolectric tests read the app's strings and drawables (AndroidNotifierTest).
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 // Exported Room schemas are committed (docs/03-technical-design.md §3.3) so later

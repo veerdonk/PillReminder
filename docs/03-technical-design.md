@@ -47,6 +47,7 @@ without the Android SDK.
     platform/
       AlarmScheduler.kt         AlarmManager wrapper (§5)
       Notifier.kt               Channels + reminder notification (§7)
+      AndroidNotifier.kt        Notifier on NotificationManager
       RingController.kt         Starts/stops AlarmRingService
       AlarmRingService.kt       Foreground service: sound + vibration + wake lock (§8)
       UsageEventSource.kt       UsageStatsManager -> List<UsageEvt> (§6)
@@ -275,8 +276,9 @@ notification is ever visible.
 - Channel `alarm_v1`, category `ALARM`, `setFullScreenIntent(AlarmActivity PI, true)`, ongoing.
 - Same actions as the reminder, plus "Snooze (X left)" (`ACTION_SNOOZE`) when `canSnooze`.
 
-**PendingIntent extras:** every action carries `EXTRA_DAY_ID` (ISO date) and `EXTRA_DOSE`.
-Request codes must be unique per action type, so the PIs don't overwrite each other. Use
+**PendingIntent extras:** every action carries `EXTRA_DAY_ID` (ISO date), `EXTRA_DOSE` and
+`EXTRA_SOURCE` (`NOTIFICATION` on the reminder, `ALARM` on the alarm notification; 01 A20).
+Request codes must be unique per action type and source, so the PIs don't overwrite each other. Use
 `FLAG_IMMUTABLE`. `ActionReceiver` passes `dayId` as `expectedDayId` to
 `ReminderController.handle`, which drops the event if it doesn't match the current day (§4), and forwards it as `TookDose(dose, now, NOTIFICATION or ALARM)`, `SkipRest(dose)` or `Snooze(dose)`.
 

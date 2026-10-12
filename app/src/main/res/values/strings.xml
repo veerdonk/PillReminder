@@ -1,3 +1,22 @@
 <resources>
     <string name="app_name">PillReminder</string>
+
+    <!-- Notification channels (design §7) -->
+    <string name="channel_reminders_name">Pill reminders</string>
+    <string name="channel_alarm_name">Pill alarm</string>
+
+    <!-- Reminder and alarm notification (FR-2, FR-3.2) -->
+    <string name="notification_title">Time for pill %1$d of %2$d</string>
+    <string name="notification_text">Tap a button below once you\'ve decided.</string>
+    <string name="notification_subtitle_snoozed">Snoozed until %1$s</string>
+    <string name="notification_subtitle_alarm_stopped">Alarm stopped — please take your pill</string>
+
+    <!-- Notification buttons -->
+    <string name="action_took">I took my pill</string>
+    <string name="action_not_today">Not today</string>
+    <string name="action_done_for_today">I\'m done for today</string>
+    <plurals name="action_snooze">
+        <item quantity="one">Snooze (%1$d left)</item>
+        <item quantity="other">Snooze (%1$d left)</item>
+    </plurals>
 </resources>

@@ -282,3 +282,20 @@ Open:
   exception handler and the event is lost. Because the wake-up is scheduled at the end of
   `apply`, a failure before that leaves the previous wake-up in place, or none. The next app
   open, boot or settings change re-runs the reconcile. To review in T12 whether a retry is needed.
+- **A17** (T7) Where the reminder's subtitle goes (02 §5 only names it). The title and text
+  stay as in FR-2.1/design §7, and the subtitle ("Snoozed until 09:20", "Alarm stopped — please
+  take your pill") is the notification's sub-text, shown in its header. The expanded view shows
+  the subtitle above the text, so the long "Alarm stopped" line isn't cut off.
+- **A18** (T7) "Snoozed until HH:MM" is always 24-hour (`HH:mm`), whatever the phone's 12/24-hour
+  setting, as written in 02 §5 and design §7.
+- **A19** (T7) The alarm notification uses the reminder's title and text ("Time for pill N of
+  M", "Tap a button below once you've decided."). Tapping its body opens the same screen as its
+  full-screen intent (AlarmActivity from T8; MainActivity until then).
+- **A20** (T7) The buttons also carry `EXTRA_SOURCE` (`NOTIFICATION` on the reminder, `ALARM` on
+  the alarm notification), so "I took my pill" records the right `DoseSource`. `ActionReceiver`
+  ignores an intent with an unknown action, a missing or unparsable dayId, a missing dose or one
+  below 1, or (for "I took my pill") a missing or other source. Request codes are unique per
+  action *and* source. Design §7 is updated to match.
+- **A21** (T7) Without the notification permission, `showReminder` posts nothing and doesn't
+  fail, and the state still advances. The setup checklist (T11) and
+  the Home banner (FR-6.3) are where a missing permission is surfaced.
