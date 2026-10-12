@@ -262,3 +262,23 @@ Open:
   as they are until the next save, which overwrites them. An unreadable settings file is also
   read as defaults. `SettingsRepository.update` throws `IllegalArgumentException` for invalid
   settings and writes nothing.
+- **A13** (T6) Detection and rollover in one Tick. 02 §6 runs detection when the *loaded*
+  state is DETECTING. If that state is about to roll over (the phone was off past
+  `dayRolloverTime`), its window belongs to the old day, and the engine ignores `wakeDetected`
+  on the fresh day anyway. So the controller only treats the state as "in DETECTING" when its
+  `dayId == dayIdOf(now)`. The second-tick rule then runs whenever the Tick ends in DETECTING
+  and detection has not run yet (the wording of 02 §4). Without a rollover this is exactly the
+  02 §6 pseudo-code; with one, detection runs once, for the new day, instead of once for the old
+  day and not at all for the new one. 02 §6 is updated to match.
+- **A14** (T6) The `[from, to]` passed to `WakeDetector.isAwake` is computed by the controller:
+  `from = max(earliestAt(dayId), now − detectionWindow)`, `to = now` (FR-1.3, design §6). The
+  detector (T9) uses it as given and doesn't recompute it.
+- **A15** (T6) Stale notification actions (design §7). `ReminderController.handle(event,
+  expectedDayId)` compares `expectedDayId` with the day after the rollover check, which is
+  always `dayIdOf(now)`. On a mismatch it does nothing at all: no rollover is saved, no history
+  is written and the platform isn't reconciled. A stale notification can only still be showing
+  if the rollover wake-up was missed, and the next Tick (rollover alarm, boot, app open) cleans it up.
+- **A16** (T6) Failures inside `handle` (e.g. a storage error) are logged by the app scope's
+  exception handler and the event is lost. Because the wake-up is scheduled at the end of
+  `apply`, a failure before that leaves the previous wake-up in place, or none. The next app
+  open, boot or settings change re-runs the reconcile. To review in T12 whether a retry is needed.

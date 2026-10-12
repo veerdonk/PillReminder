@@ -1,9 +1,17 @@
 package nl.veerdonk.pillreminder
 
 import android.content.Context
+import android.util.Log
 import androidx.datastore.dataStoreFile
 import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.room.Room
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.launch
+import nl.veerdonk.pillreminder.controller.ReminderController
 import nl.veerdonk.pillreminder.data.DataStoreSettingsRepository
 import nl.veerdonk.pillreminder.data.DataStoreStateStore
 import nl.veerdonk.pillreminder.data.SettingsRepository
@@ -11,13 +19,23 @@ import nl.veerdonk.pillreminder.data.StateStore
 import nl.veerdonk.pillreminder.data.history.HistoryDatabase
 import nl.veerdonk.pillreminder.data.history.HistoryRepository
 import nl.veerdonk.pillreminder.data.history.RoomHistoryRepository
+import nl.veerdonk.pillreminder.platform.AlarmScheduler
+import nl.veerdonk.pillreminder.platform.AndroidAlarmScheduler
+import nl.veerdonk.pillreminder.platform.NoOpNotifier
+import nl.veerdonk.pillreminder.platform.NoOpRingController
+import nl.veerdonk.pillreminder.platform.NoOpWakeDetector
+import nl.veerdonk.pillreminder.platform.Notifier
+import nl.veerdonk.pillreminder.platform.RingController
+import nl.veerdonk.pillreminder.platform.WakeDetector
 import java.time.Clock
+import java.time.ZoneId
 
 /**
  * Manual dependency container (no Hilt), created once by [PillReminderApp]. Everything here is
  * a process-wide singleton: in particular there must be exactly one DataStore per file, since a
- * second one on the same file throws at runtime. Platform services and the ReminderController
- * are added by later tasks (see docs/03-technical-design.md §2).
+ * second one on the same file throws at runtime.
+ *
+ * The notifier, ring controller and wake detector are no-ops until T7, T8 and T9 replace them.
  */
 class AppContainer(appContext: Context) {
 
@@ -43,4 +61,48 @@ class AppContainer(appContext: Context) {
     ).build()
 
     val historyRepository: HistoryRepository = RoomHistoryRepository(historyDatabase.historyDao(), clock)
+
+    /**
+     * Process-wide scope for work that must outlive a receiver or activity, such as a tick
+     * started from `goAsync()`. A failed job is logged; it doesn't cancel the others.
+     */
+    val appScope: CoroutineScope = CoroutineScope(
+        SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, e ->
+            Log.e(TAG, "Background job failed", e)
+        },
+    )
+
+    val alarmScheduler: AlarmScheduler = AndroidAlarmScheduler(appContext)
+
+    val notifier: Notifier = NoOpNotifier // T7
+
+    val ringController: RingController = NoOpRingController // T8
+
+    val wakeDetector: WakeDetector = NoOpWakeDetector // T9
+
+    val reminderController = ReminderController(
+        clock = clock,
+        zone = ZoneId::systemDefault,
+        settingsRepository = settingsRepository,
+        stateStore = stateStore,
+        historyRepository = historyRepository,
+        wakeDetector = wakeDetector,
+        notifier = notifier,
+        ringController = ringController,
+        alarmScheduler = alarmScheduler,
+    )
+
+    /**
+     * Ticks after every settings change (design §5), so deadlines derived from the settings are
+     * rescheduled. The current value on start is skipped: it is not a change.
+     */
+    fun tickOnSettingsChange() {
+        appScope.launch {
+            settingsRepository.settings.drop(1).collect { reminderController.tick() }
+        }
+    }
+
+    private companion object {
+        const val TAG = "AppContainer"
+    }
 }

@@ -1,0 +1,117 @@
+package nl.veerdonk.pillreminder.controller
+
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import nl.veerdonk.pillreminder.core.engine.Engine
+import nl.veerdonk.pillreminder.core.model.DayState
+import nl.veerdonk.pillreminder.core.model.Event
+import nl.veerdonk.pillreminder.core.model.Outputs
+import nl.veerdonk.pillreminder.core.model.Phase
+import nl.veerdonk.pillreminder.core.model.Settings
+import nl.veerdonk.pillreminder.core.time.TimeMath
+import nl.veerdonk.pillreminder.data.SettingsRepository
+import nl.veerdonk.pillreminder.data.StateStore
+import nl.veerdonk.pillreminder.data.history.HistoryRepository
+import nl.veerdonk.pillreminder.platform.AlarmScheduler
+import nl.veerdonk.pillreminder.platform.Notifier
+import nl.veerdonk.pillreminder.platform.RingController
+import nl.veerdonk.pillreminder.platform.WakeDetector
+import java.time.Clock
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+
+/**
+ * The single entry point for events (docs/02-state-machine.md §6). Each call loads the state,
+ * reduces the event, persists the result, writes history and then reconciles the platform
+ * against the engine's outputs. Calls are serialised by a [Mutex], so every event sees the
+ * state the previous one saved.
+ *
+ * Time comes from [clock] and the zone from [zone], read on every call (in production
+ * `ZoneId.systemDefault()`, so a time zone change takes effect at the next event).
+ */
+class ReminderController(
+    private val clock: Clock,
+    private val zone: () -> ZoneId,
+    private val settingsRepository: SettingsRepository,
+    private val stateStore: StateStore,
+    private val historyRepository: HistoryRepository,
+    private val wakeDetector: WakeDetector,
+    private val notifier: Notifier,
+    private val ringController: RingController,
+    private val alarmScheduler: AlarmScheduler,
+) {
+    private val mutex = Mutex()
+
+    /**
+     * Processes [event]. When [expectedDayId] is set (actions from a notification carry the day
+     * they were posted for, design §7), the event is dropped if that isn't the current app-day
+     * after the rollover check, i.e. `dayIdOf(now)`. A dropped event changes nothing: no state
+     * is saved, no history is written and the platform is not touched.
+     */
+    suspend fun handle(event: Event, expectedDayId: LocalDate? = null) {
+        mutex.withLock {
+            val now = clock.instant()
+            val zone = zone()
+            val settings = settingsRepository.current()
+            val today = TimeMath.dayIdOf(now, settings, zone)
+            // Reduce rolls any older (or newer) state over to `today` first, so after the
+            // rollover check the state's dayId is always `today`.
+            if (expectedDayId != null && expectedDayId != today) return
+
+            val state = stateStore.load() ?: Engine.fresh(today)
+
+            // Detection only runs for a Tick that finds the day in DETECTING. A state that is
+            // about to roll over is not "in DETECTING" for this purpose: its window is a past day's.
+            val detectNow = event is Event.Tick && state.phase == Phase.DETECTING && state.dayId == today
+            val input = if (event is Event.Tick) Event.Tick(detectNow && isAwake(today, settings, now, zone)) else event
+            var t = Engine.reduce(state, input, settings, now, zone)
+            // Second-tick rule (02 §4): the Tick moved the day into DETECTING, but the engine
+            // ignores wakeDetected on that move, so detect now and tick once more. The same
+            // `now` can't roll over again, so the first reduce's finishedDay stands.
+            if (event is Event.Tick && !detectNow && t.state.phase == Phase.DETECTING) {
+                val detected = isAwake(today, settings, now, zone)
+                t = t.copy(state = Engine.reduce(t.state, Event.Tick(detected), settings, now, zone).state)
+            }
+
+            t.finishedDay?.let { historyRepository.upsert(it) }
+            stateStore.save(t.state)
+            historyRepository.upsert(t.state) // keep today's history row live
+            apply(Engine.outputs(t.state, settings, now, zone), t.state)
+        }
+    }
+
+    /** A time-based Tick. `wakeDetected` is filled in by [handle]. */
+    suspend fun tick() = handle(Event.Tick(false))
+
+    /**
+     * Detection window (FR-1.3): events since `earliestAt` and within the last
+     * `detectionWindow`, up to now.
+     */
+    private suspend fun isAwake(day: LocalDate, settings: Settings, now: Instant, zone: ZoneId): Boolean {
+        val from = maxOf(TimeMath.earliestAt(day, settings, zone), now - settings.detectionWindow)
+        return wakeDetector.isAwake(from, now, settings)
+    }
+
+    /**
+     * Reconciles the platform with [outputs], in the order of design §8. Every step is
+     * idempotent, so running it again with the same outputs changes nothing.
+     */
+    private fun apply(outputs: Outputs, state: DayState) {
+        val ringing = outputs.ringing
+        if (ringing == null) {
+            ringController.ensureStopped()
+            // While ringing the ring service owns notification 1001, so leave it alone.
+            val reminder = outputs.reminder
+            if (reminder != null) notifier.showReminder(reminder) else notifier.cancelReminder()
+        } else {
+            ringController.ensureRinging(ringing)
+        }
+        alarmScheduler.schedule(outputs.nextWakeAt, userVisible = state.phase in USER_VISIBLE_PHASES)
+    }
+
+    private companion object {
+        /** Phases whose next wake-up is a deadline the user sees (design §5): `setAlarmClock`. */
+        val USER_VISIBLE_PHASES = setOf(Phase.WAITING, Phase.REMINDER, Phase.RINGING, Phase.SNOOZED)
+    }
+}

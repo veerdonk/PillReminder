@@ -22,7 +22,7 @@ Wave 5:  T12 integration hardening + manual test pass
 | T3 | Engine (reducer + outputs) | T2 | [x] |
 | T4 | WakeRule | T2 | [x] |
 | T5 | Data layer (settings, state, history) | T2 | [x] |
-| T6 | Scheduler, receivers, ReminderController | T3, T5 | [ ] |
+| T6 | Scheduler, receivers, ReminderController | T3, T5 | [x] |
 | T7 | Notifications + ActionReceiver | T2 | [ ] |
 | T8 | Alarm ring service + AlarmActivity | T7 | [ ] |
 | T9 | UsageEventSource + AndroidWakeDetector | T4 | [ ] |
@@ -135,6 +135,14 @@ Settings that fail `validate()` on read fall back to defaults (A12 in 01). Tests
   - apply order
   - stale `dayId` actions are dropped
 - On a device, after a reboot, the next alarm is re-armed (check with `adb shell dumpsys alarm`).
+
+*Done 2026-10-12. `ReminderController` (controller/), `AndroidAlarmScheduler` and the receivers
+(platform/) are wired in `AppContainer`, with an app-scoped `appScope`. The `WakeDetector`,
+`Notifier` and `RingController` interfaces live in platform/ with no-op implementations
+(`NoOpWakeDetector`, `NoOpNotifier`, `NoOpRingController`) that T9, T7 and T8 replace.
+`handle(event, expectedDayId)` drops stale notification actions (design §4). Settings changes
+tick via `AppContainer.tickOnSettingsChange()`. Assumptions A13–A16 in 01. The reboot check on
+the device is still open for the owner.*
 
 ## T7 — Notifications + ActionReceiver
 **Do:**
