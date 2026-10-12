@@ -27,6 +27,8 @@ data class ReminderSpec(
     val canSnooze: Boolean,
     val snoozesLeft: Int,
     val subtitle: ReminderSubtitle?,
+    /** Set by the controller from the pill count, not by `Engine.outputs` (FR-10.3). */
+    val lowStock: LowStock? = null,
 )
 
 /**

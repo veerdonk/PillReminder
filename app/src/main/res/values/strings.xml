@@ -18,6 +18,15 @@
     <string name="status_wake_text">By %1$s at the latest</string>
     <string name="status_done_title">All done for today</string>
     <string name="status_done_text">Next pill tomorrow, once you\'re up</string>
+    <string name="notification_low_stock">Running low: %1$s, enough for %2$s</string>
+    <plurals name="pills_left">
+        <item quantity="one">%1$d pill left</item>
+        <item quantity="other">%1$d pills left</item>
+    </plurals>
+    <plurals name="pills_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
 
     <!-- Notification buttons -->
     <string name="action_took">I took my pill</string>
@@ -114,6 +123,15 @@
     <string name="next_no_more_alarms">No more alarms for this dose</string>
     <string name="next_held_driving">Alarm held while Maps is navigating</string>
     <string name="next_done_until">All quiet until the next day starts at %1$s</string>
+    <string name="pills_title">Pill supply</string>
+    <string name="pills_count">%1$s, enough for %2$s</string>
+    <string name="pills_low">Running low. Time to get a new batch.</string>
+    <string name="pills_not_counting">Not counting. Enter how many pills you have, and each dose taken counts down by one.</string>
+    <string name="pills_set">Set number of pills</string>
+    <string name="pills_dialog_title">Pills you have now</string>
+    <string name="pills_dialog_label">Number of pills</string>
+    <string name="pills_dialog_error">Enter a whole number from 0 to %1$d</string>
+    <string name="pills_stop">Stop counting</string>
     <string name="record_title">Record dose</string>
     <string name="record_took_now" tools:ignore="PluralsCandidate">Took pill %1$d now</string>
     <string name="record_took_at">Took pill %1$d at…</string>

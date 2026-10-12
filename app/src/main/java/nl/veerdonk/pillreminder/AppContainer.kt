@@ -13,8 +13,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import nl.veerdonk.pillreminder.controller.ReminderController
+import nl.veerdonk.pillreminder.data.DataStorePillStockRepository
 import nl.veerdonk.pillreminder.data.DataStoreSettingsRepository
 import nl.veerdonk.pillreminder.data.DataStoreStateStore
+import nl.veerdonk.pillreminder.data.PillStockRepository
 import nl.veerdonk.pillreminder.data.SettingsRepository
 import nl.veerdonk.pillreminder.data.StateStore
 import nl.veerdonk.pillreminder.data.history.HistoryDatabase
@@ -57,6 +59,13 @@ class AppContainer(appContext: Context) {
     val stateStore: StateStore = DataStoreStateStore(
         DataStoreStateStore.createDataStore(
             file = { appContext.dataStoreFile(DataStoreStateStore.FILE_NAME) },
+        ),
+    )
+
+    /** Pills on hand, counted down per dose taken (FR-10). */
+    val pillStock: PillStockRepository = DataStorePillStockRepository(
+        DataStorePillStockRepository.createDataStore(
+            file = { appContext.preferencesDataStoreFile(DataStorePillStockRepository.FILE_NAME) },
         ),
     )
 
@@ -117,6 +126,7 @@ class AppContainer(appContext: Context) {
         notifier = notifier,
         ringController = ringController,
         alarmScheduler = alarmScheduler,
+        pillStock = pillStock,
     )
 
     /**

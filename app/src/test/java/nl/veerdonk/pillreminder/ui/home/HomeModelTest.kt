@@ -227,4 +227,21 @@ class HomeModelTest {
         assertEquals(Phase.BEFORE_WINDOW, model.state.phase)
         assertEquals(3, model.rows.size)
     }
+
+    // --- pill count input (FR-10.1) ---
+
+    @Test fun parsesPillCount() {
+        assertEquals(90, parsePillCount("90"))
+        assertEquals(42, parsePillCount(" 42 "))
+        assertEquals(0, parsePillCount("0"))
+        assertEquals(9999, parsePillCount("9999"))
+    }
+
+    @Test fun rejectsInvalidPillCount() {
+        assertNull(parsePillCount(""))
+        assertNull(parsePillCount("-1"))
+        assertNull(parsePillCount("10000"))
+        assertNull(parsePillCount("4.5"))
+        assertNull(parsePillCount("abc"))
+    }
 }

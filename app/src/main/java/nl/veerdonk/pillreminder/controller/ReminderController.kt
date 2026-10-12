@@ -7,8 +7,10 @@ import nl.veerdonk.pillreminder.core.model.DayState
 import nl.veerdonk.pillreminder.core.model.Event
 import nl.veerdonk.pillreminder.core.model.Outputs
 import nl.veerdonk.pillreminder.core.model.Phase
+import nl.veerdonk.pillreminder.core.model.PillStock
 import nl.veerdonk.pillreminder.core.model.Settings
 import nl.veerdonk.pillreminder.core.time.TimeMath
+import nl.veerdonk.pillreminder.data.PillStockRepository
 import nl.veerdonk.pillreminder.data.SettingsRepository
 import nl.veerdonk.pillreminder.data.StateStore
 import nl.veerdonk.pillreminder.data.history.HistoryRepository
@@ -42,6 +44,7 @@ class ReminderController(
     private val notifier: Notifier,
     private val ringController: RingController,
     private val alarmScheduler: AlarmScheduler,
+    private val pillStock: PillStockRepository,
 ) {
     private val mutex = Mutex()
 
@@ -85,7 +88,12 @@ class ReminderController(
             t.finishedDay?.let { historyRepository.upsert(it) }
             stateStore.save(t.state)
             historyRepository.upsert(t.state) // keep today's history row live
-            apply(Engine.outputs(t.state, settings, now, zone), t.state)
+            // Every dose newly recorded as taken uses one pill (FR-10.2).
+            val taken = PillStock.pillsTaken(state, t.state)
+            if (taken > 0) pillStock.take(taken)
+            val lowStock = PillStock.lowStock(pillStock.current(), settings.dosesPerDay)
+            val outputs = Engine.outputs(t.state, settings, now, zone)
+            apply(outputs.copy(reminder = outputs.reminder?.copy(lowStock = lowStock)), t.state)
         }
     }
 

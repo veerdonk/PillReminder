@@ -11,6 +11,7 @@ import nl.veerdonk.pillreminder.core.model.DoseRecord
 import nl.veerdonk.pillreminder.core.model.DoseSource
 import nl.veerdonk.pillreminder.core.model.DoseStatus
 import nl.veerdonk.pillreminder.core.model.Event
+import nl.veerdonk.pillreminder.core.model.LowStock
 import nl.veerdonk.pillreminder.core.model.Phase
 import nl.veerdonk.pillreminder.core.model.Settings
 import nl.veerdonk.pillreminder.core.model.StatusSpec
@@ -64,6 +65,7 @@ class ReminderControllerTest {
         val history = FakeHistoryRepository(log)
         val detector = FakeWakeDetector(log, *awake)
         val navigation = FakeNavigationDetector()
+        val pills = FakePillStock()
         val controller = ReminderController(
             clock = clock,
             zone = { zone },
@@ -75,6 +77,7 @@ class ReminderControllerTest {
             notifier = FakeNotifier(log),
             ringController = FakeRingController(log),
             alarmScheduler = FakeAlarmScheduler(log),
+            pillStock = pills,
         )
 
         val state: DayState get() = store.stored!!
@@ -484,6 +487,46 @@ class ReminderControllerTest {
         assertEquals(Phase.WAITING, h.state.phase)
     }
 
+    // --- pill count (FR-10) ---
+
+    @Test
+    fun `each dose taken counts the pills down by one`() = runTest {
+        val h = harness(reminder, t("07:30"))
+        h.pills.set(90)
+        h.controller.handle(Event.TookDose(1, t("07:30"), DoseSource.NOTIFICATION))
+        assertEquals(89, h.pills.current())
+
+        // A tick, a stale repeat of the same tap and a skip take nothing.
+        h.clock.now = t("08:00")
+        h.controller.tick()
+        h.controller.handle(Event.TookDose(1, t("07:30"), DoseSource.NOTIFICATION))
+        h.controller.handle(Event.SkipRest(2))
+        assertEquals(89, h.pills.current())
+    }
+
+    @Test
+    fun `an untracked count stays untracked and never warns`() = runTest {
+        val h = harness(waiting, t("12:00"))
+        h.controller.tick()
+        assertNull(h.pills.current())
+        assertNull(h.log.calls.filterIsInstance<Call.ShowReminder>().single().spec.lowStock)
+    }
+
+    @Test
+    fun `the reminder warns when under five days of pills are left`() = runTest {
+        val h = harness(waiting, t("12:00"))
+        h.pills.set(15) // exactly five days at 3 a day: no warning
+        h.controller.tick()
+        assertNull(h.log.calls.filterIsInstance<Call.ShowReminder>().last().spec.lowStock)
+
+        h.clock.now = t("12:01")
+        h.controller.handle(Event.TookDose(2, t("12:01"), DoseSource.NOTIFICATION))
+        assertEquals(14, h.pills.current())
+        h.clock.now = t("16:00")
+        h.controller.tick()
+        assertEquals(LowStock(pillsLeft = 14, daysLeft = 4), h.log.calls.filterIsInstance<Call.ShowReminder>().last().spec.lowStock)
+    }
+
     @Test
     fun `the zone is read on every call`() = runTest {
         var zone = ams
@@ -500,6 +543,7 @@ class ReminderControllerTest {
             notifier = FakeNotifier(log),
             ringController = FakeRingController(log),
             alarmScheduler = FakeAlarmScheduler(log),
+            pillStock = FakePillStock(),
         )
         controller.tick()
         assertEquals(Phase.BEFORE_WINDOW, store.stored!!.phase)

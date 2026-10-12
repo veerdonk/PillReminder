@@ -5,6 +5,7 @@ import nl.veerdonk.pillreminder.core.model.DayState
 import nl.veerdonk.pillreminder.core.model.DoseStatus
 import nl.veerdonk.pillreminder.core.model.Event
 import nl.veerdonk.pillreminder.core.model.Phase
+import nl.veerdonk.pillreminder.core.model.PillStock
 import nl.veerdonk.pillreminder.core.model.Settings
 import nl.veerdonk.pillreminder.core.time.TimeMath
 import java.time.Duration
@@ -242,3 +243,6 @@ fun validateBackdate(at: Instant, state: DayState, settings: Settings, now: Inst
 /** Picker time to a validated instant. */
 fun resolveBackdate(time: LocalTime, state: DayState, settings: Settings, now: Instant, zone: ZoneId): BackdateResult =
     validateBackdate(backdatedInstant(time, settings, now, zone), state, settings, now, zone)
+
+/** A typed pill count (FR-10.1): a whole number from 0 to `PillStock.MAX_PILLS`, else null. */
+fun parsePillCount(text: String): Int? = text.trim().toIntOrNull()?.takeIf { it in 0..PillStock.MAX_PILLS }

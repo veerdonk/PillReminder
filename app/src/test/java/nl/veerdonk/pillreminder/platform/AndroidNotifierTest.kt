@@ -7,6 +7,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.provider.Settings
 import nl.veerdonk.pillreminder.core.model.DoseSource
+import nl.veerdonk.pillreminder.core.model.LowStock
 import nl.veerdonk.pillreminder.core.model.ReminderSpec
 import nl.veerdonk.pillreminder.core.model.ReminderSubtitle
 import nl.veerdonk.pillreminder.core.model.RingSpec
@@ -44,7 +45,7 @@ class AndroidNotifierTest {
 
     private val day = LocalDate.parse("2026-10-13")
 
-    private fun reminder(dose: Int, subtitle: ReminderSubtitle? = null) = ReminderSpec(
+    private fun reminder(dose: Int, subtitle: ReminderSubtitle? = null, lowStock: LowStock? = null) = ReminderSpec(
         dayId = day,
         dose = dose,
         doseCount = 3,
@@ -52,6 +53,7 @@ class AndroidNotifierTest {
         canSnooze = false,
         snoozesLeft = 3,
         subtitle = subtitle,
+        lowStock = lowStock,
     )
 
     private fun ring(canSnooze: Boolean, snoozesLeft: Int) =
@@ -202,6 +204,35 @@ class AndroidNotifierTest {
     @Test
     fun `the alarm has its own notification ID`() {
         assertNotEquals(AndroidNotifier.NOTIFICATION_ID, AndroidNotifier.ALARM_NOTIFICATION_ID)
+    }
+
+    @Test
+    fun `running low replaces the collapsed text and leads the expanded text`() {
+        notifier.showReminder(reminder(dose = 1, lowStock = LowStock(pillsLeft = 14, daysLeft = 4)))
+
+        val n = posted()
+        assertEquals("Running low: 14 pills left, enough for 4 days", n.text)
+        assertNull(n.subText)
+        assertEquals(
+            "Running low: 14 pills left, enough for 4 days\nTap a button below once you've decided.",
+            n.extras.getCharSequence(Notification.EXTRA_BIG_TEXT).toString(),
+        )
+        // The warning doesn't silence a fresh reminder.
+        assertEquals(Notification.GROUP_ALERT_ALL, n.groupAlertBehavior)
+    }
+
+    @Test
+    fun `running low under a subtitle, singular wording`() {
+        notifier.showReminder(
+            reminder(dose = 2, subtitle = ReminderSubtitle.AlarmStopped, lowStock = LowStock(pillsLeft = 1, daysLeft = 1)),
+        )
+
+        val n = posted()
+        assertEquals("Alarm stopped — please take your pill", n.subText)
+        assertEquals(
+            "Alarm stopped — please take your pill\nRunning low: 1 pill left, enough for 1 day\nTap a button below once you've decided.",
+            n.extras.getCharSequence(Notification.EXTRA_BIG_TEXT).toString(),
+        )
     }
 
     @Test

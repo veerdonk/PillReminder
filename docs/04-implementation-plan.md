@@ -31,6 +31,7 @@ Wave 5:  T12 integration hardening + manual test pass
 | T12 | Integration, hardening, manual test pass | all | [ ] |
 | T13 | Hold the alarm while Maps navigates (FR-3.8) | T3, T6, T11 | [x] |
 | T14 | Optional status notification with countdown (FR-2.4) | T3, T6, T7, T10 | [x] |
+| T15 | Pill supply count and low warning (FR-10) | T6, T7, T10 | [x] |
 
 T6 integrates T7, T8 and T9 through their interfaces. If one of those isn't done yet,
 T6 uses a no-op/fake implementation and the owning task wires the real one into `AppContainer`.
@@ -293,3 +294,13 @@ navigates. If it doesn't, the Maps lines there show what to match on instead.*
 passes on the phone.
 
 *Done 2026-10-12 (owner request). Assumption A59 in 01. The owner reports M26 passing.*
+## T15 — Pill supply count and low warning
+**Do:**
+- `PillStock` rules in `:core`, `PillStockRepository` in `:app`, wired into `ReminderController`.
+- The "Running low" line on the reminder notification; the Pill supply card on Home.
+
+**Accept when:**
+- Unit tests cover the count-down (taken, backdated, skipped, stale, rollover) and the 5-day threshold.
+- On the phone: M27 in `05-test-plan.md` passes.
+
+*Done 2026-10-12 (owner request). Assumption A60 in 01. M27 is open for the owner.*

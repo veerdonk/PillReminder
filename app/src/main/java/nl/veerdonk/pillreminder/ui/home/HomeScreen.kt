@@ -7,12 +7,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -26,8 +29,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import nl.veerdonk.pillreminder.R
+import nl.veerdonk.pillreminder.core.model.PillStock
 import nl.veerdonk.pillreminder.platform.SetupStatus
 import nl.veerdonk.pillreminder.ui.common.TimePickerDialog
 import nl.veerdonk.pillreminder.ui.common.formatTime
@@ -46,6 +51,7 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
 ) {
     val model by viewModel.model.collectAsState()
+    val pillsLeft by viewModel.pillsLeft.collectAsState()
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -72,6 +78,7 @@ fun HomeScreen(
                 StatusCard(m, zone)
                 NextActionLine(m.nextAction, zone)
                 ActionsCard(m, viewModel)
+                PillSupplyCard(pillsLeft, m.settings.dosesPerDay, viewModel::setPillsLeft)
             }
         }
     }
@@ -194,4 +201,87 @@ private fun backdateErrorText(error: BackdateResult.Invalid, zone: ZoneId): Stri
         BackdateError.BEFORE_PREVIOUS_DOSE -> stringResource(R.string.record_error_before_previous, formatTime(limit, zone))
         BackdateError.BEFORE_START_OF_DAY -> stringResource(R.string.record_error_before_day_start, formatTime(limit, zone))
     }
+}
+
+/** Pills on hand, counted down per dose taken, with the low-supply warning (FR-10). */
+@Composable
+private fun PillSupplyCard(pillsLeft: Int?, dosesPerDay: Int, onSet: (Int?) -> Unit) {
+    var editing by remember { mutableStateOf(false) }
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(stringResource(R.string.pills_title), style = MaterialTheme.typography.titleMedium)
+            if (pillsLeft == null) {
+                Text(stringResource(R.string.pills_not_counting), style = MaterialTheme.typography.bodyMedium)
+            } else {
+                val days = PillStock.daysLeft(pillsLeft, dosesPerDay)
+                Text(
+                    stringResource(
+                        R.string.pills_count,
+                        pluralStringResource(R.plurals.pills_left, pillsLeft, pillsLeft),
+                        pluralStringResource(R.plurals.pills_days, days, days),
+                    ),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                if (PillStock.lowStock(pillsLeft, dosesPerDay) != null) {
+                    Text(
+                        stringResource(R.string.pills_low),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+            OutlinedButton(onClick = { editing = true }, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.pills_set))
+            }
+        }
+    }
+    if (editing) {
+        PillCountDialog(
+            initial = pillsLeft,
+            onSave = { count ->
+                editing = false
+                onSet(count)
+            },
+            onDismiss = { editing = false },
+        )
+    }
+}
+
+/** Saves a valid count; "Stop counting" (only while counting) saves null. */
+@Composable
+private fun PillCountDialog(initial: Int?, onSave: (Int?) -> Unit, onDismiss: () -> Unit) {
+    var text by remember { mutableStateOf(initial?.toString().orEmpty()) }
+    val count = parsePillCount(text)
+    val showError = text.isNotBlank() && count == null
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.pills_dialog_title)) },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                label = { Text(stringResource(R.string.pills_dialog_label)) },
+                isError = showError,
+                supportingText = if (showError) {
+                    { Text(stringResource(R.string.pills_dialog_error, PillStock.MAX_PILLS)) }
+                } else {
+                    null
+                },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(count) }, enabled = count != null) { Text(stringResource(R.string.settings_save)) }
+        },
+        dismissButton = {
+            Row {
+                if (initial != null) {
+                    TextButton(onClick = { onSave(null) }) { Text(stringResource(R.string.pills_stop)) }
+                }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.dialog_cancel)) }
+            }
+        },
+    )
 }
