@@ -118,21 +118,18 @@ class AndroidNotifierTest {
     }
 
     @Test
-    fun `status before wake-up and when done has no countdown`() {
+    fun `status before wake-up has no countdown`() {
         notifier.showStatus(StatusSpec.WaitingForWake(3, Instant.parse("2026-10-13T08:30:00Z")))
         val waiting = shadow.getNotification(AndroidNotifier.STATUS_NOTIFICATION_ID)
         assertEquals("Once you're up: pill 1 of 3", waiting.title)
         assertEquals("By 10:30 at the latest", waiting.text)
         assertFalse(waiting.extras.getBoolean(Notification.EXTRA_SHOW_CHRONOMETER))
-
-        notifier.showStatus(StatusSpec.DoneForToday)
-        assertEquals("All done for today", shadow.getNotification(AndroidNotifier.STATUS_NOTIFICATION_ID).title)
     }
 
     @Test
     fun `cancelStatus leaves the reminder`() {
         notifier.showReminder(reminder(dose = 2))
-        notifier.showStatus(StatusSpec.DoneForToday)
+        notifier.showStatus(StatusSpec.WaitingForWake(3, Instant.parse("2026-10-13T08:30:00Z")))
         notifier.cancelStatus()
         assertNull(shadow.getNotification(AndroidNotifier.STATUS_NOTIFICATION_ID))
         assertNotNull(shadow.getNotification(AndroidNotifier.NOTIFICATION_ID))

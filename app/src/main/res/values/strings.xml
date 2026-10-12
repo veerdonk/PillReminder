@@ -16,8 +16,6 @@
     <string name="status_next_text">Counting down to your next pill</string>
     <string name="status_wake_title">Once you\'re up: pill 1 of %1$d</string>
     <string name="status_wake_text">By %1$s at the latest</string>
-    <string name="status_done_title">All done for today</string>
-    <string name="status_done_text">Next pill tomorrow, once you\'re up</string>
     <string name="notification_low_stock">Running low: %1$s, enough for %2$s</string>
     <plurals name="pills_left">
         <item quantity="one">%1$d pill left</item>

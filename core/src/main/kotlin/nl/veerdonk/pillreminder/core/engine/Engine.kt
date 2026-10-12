@@ -122,8 +122,8 @@ object Engine {
             StatusSpec.WaitingForWake(settings.dosesPerDay, TimeMath.fallbackAt(state.dayId, settings, zone))
         // A WAITING state without a previous dose time is repaired on the next Tick (A10).
         Phase.WAITING -> dueAt(state, settings)?.let { StatusSpec.NextDose(state.nextDose, settings.dosesPerDay, it) }
-        Phase.DONE -> StatusSpec.DoneForToday
-        else -> null // the reminder or the alarm is showing
+        // DONE: nothing left to count down to, so no notification until the next day (FR-2.4).
+        else -> null // or the reminder or the alarm is showing
     }
 
     private fun process(state: DayState, event: Event, s: Settings, now: Instant, zone: ZoneId): DayState =
