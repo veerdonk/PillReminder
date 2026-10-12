@@ -299,3 +299,15 @@ Open:
 - **A21** (T7) Without the notification permission, `showReminder` posts nothing and doesn't
   fail, and the state still advances. The setup checklist (T11) and
   the Home banner (FR-6.3) are where a missing permission is surfaced.
+- **A40** (T11) The Home banner counts every checklist item, including the soft ones and the
+  manual OnePlus box, so it stays until the owner has ticked or fixed everything. It is red when a
+  hard requirement (notifications, exact alarms) is missing, and calmer otherwise.
+- **A41** (T11) "Setup seen" is set when the user taps Continue on the Setup screen, not when
+  the screen is first shown. Setup opens at app start (not mid-session) if it was never seen or a
+  hard requirement is missing; the Home banner is the way back in at other times. Continue is
+  always enabled, so a hard requirement can be skipped (the banner then stays red).
+- **A42** (T11) The "I've done this" box and "setup seen" are kept in a small SharedPreferences
+  file (`setup_prefs`), not in `Settings`, since they are UI state and not part of the core model.
+- **A43** (T11) The manifest also declares PACKAGE_USAGE_STATS (design §9 lists it) so the app
+  shows up under Usage access. T9 reads the log. The battery-optimisation dialog is lint's
+  `BatteryLife`, suppressed because the app is sideloaded.
