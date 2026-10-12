@@ -292,4 +292,4 @@ navigates. If it doesn't, the Maps lines there show what to match on instead.*
 **Accept when:** unit tests cover the outputs, the controller order and the notification; M26
 passes on the phone.
 
-*Done 2026-10-12 (owner request). Assumption A59 in 01. M26 is open for the owner.*
+*Done 2026-10-12 (owner request). Assumption A59 in 01. The owner reports M26 passing.*
