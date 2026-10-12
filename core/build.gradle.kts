@@ -1,7 +1,9 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
+    `java-library`
     alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 java {
@@ -16,5 +18,7 @@ kotlin {
 }
 
 dependencies {
+    // api: the model is @Serializable and CoreJson is part of the public surface used by :app.
+    api(libs.kotlinx.serialization.json)
     testImplementation(libs.junit)
 }
