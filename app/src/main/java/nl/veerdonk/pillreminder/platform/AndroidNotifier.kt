@@ -82,7 +82,8 @@ class AndroidNotifier(
         spec.subtitle?.let { subtitle ->
             val line = subtitleText(subtitle)
             // A subtitle only exists right after a ring (SNOOZED, PENDING_SILENT): the alarm just
-            // alerted, so this re-post stays silent (01 A26).
+            // alerted, so this re-post stays silent (01 A26). HELD_DRIVING stays silent too:
+            // the reminder was already shown, and the user is driving (FR-3.8).
             builder.setSilent(true)
                 .setSubText(line)
                 .setStyle(NotificationCompat.BigTextStyle().bigText("$line\n${context.getString(R.string.notification_text)}"))
@@ -136,6 +137,7 @@ class AndroidNotifier(
             TIME_FORMAT.format(subtitle.until.atZone(zone())),
         )
         ReminderSubtitle.AlarmStopped -> context.getString(R.string.notification_subtitle_alarm_stopped)
+        ReminderSubtitle.HeldWhileDriving -> context.getString(R.string.notification_subtitle_held_driving)
     }
 
     private fun post(notification: Notification) {

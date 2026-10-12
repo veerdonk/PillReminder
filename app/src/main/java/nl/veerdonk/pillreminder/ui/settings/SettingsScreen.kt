@@ -48,6 +48,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import nl.veerdonk.pillreminder.R
 import nl.veerdonk.pillreminder.platform.DetectionLogEntry
+import nl.veerdonk.pillreminder.platform.NavigationStatus
 import nl.veerdonk.pillreminder.ui.common.TimePickerDialog
 import nl.veerdonk.pillreminder.ui.common.formatTime
 import java.time.LocalTime
@@ -58,7 +59,9 @@ import kotlinx.coroutines.flow.StateFlow
 fun SettingsScreen(
     viewModel: SettingsViewModel,
     detectionLog: StateFlow<DetectionLogEntry?>,
+    navigationStatus: StateFlow<NavigationStatus>,
     onTestAlarm: () -> Unit,
+    onOpenSetup: () -> Unit,
     onBack: () -> Unit,
 ) {
     val form = viewModel.form
@@ -150,9 +153,15 @@ fun SettingsScreen(
                 TimeField(R.string.setting_rollover, form.rollover, errors[SettingsField.ROLLOVER]) { t ->
                     viewModel.edit { it.copy(rollover = t) }
                 }
+                // Setup only opens by itself on first launch; this reaches it later, e.g. for the
+                // optional rows (FR-9.1).
+                OutlinedButton(onClick = onOpenSetup, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.settings_open_setup))
+                }
                 OutlinedButton(onClick = { confirmReset = true }, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.settings_reset))
                 }
+                NavigationStatusInfo(navigationStatus)
                 if (isDebuggable(LocalContext.current)) DetectionLog(detectionLog)
             }
         }
@@ -311,6 +320,23 @@ private fun DetectionLog(log: StateFlow<DetectionLogEntry?>) {
         Text(stringResource(R.string.settings_detection_log), style = MaterialTheme.typography.titleSmall)
         Text(
             text = entry?.describe() ?: stringResource(R.string.settings_detection_log_empty),
+            fontFamily = FontFamily.Monospace,
+            style = MaterialTheme.typography.bodySmall,
+        )
+    }
+}
+
+/**
+ * Live state of the Maps navigation check (FR-3.8). Shown in release builds too, so the rule
+ * can be checked on the phone while Maps navigates (A58).
+ */
+@Composable
+private fun NavigationStatusInfo(status: StateFlow<NavigationStatus>) {
+    val current by status.collectAsState()
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(stringResource(R.string.settings_navigation_status), style = MaterialTheme.typography.titleSmall)
+        Text(
+            text = current.describe(),
             fontFamily = FontFamily.Monospace,
             style = MaterialTheme.typography.bodySmall,
         )

@@ -14,6 +14,7 @@ import nl.veerdonk.pillreminder.data.history.HistoryRepository
 import nl.veerdonk.pillreminder.platform.AlarmScheduler
 import nl.veerdonk.pillreminder.platform.Notifier
 import nl.veerdonk.pillreminder.platform.RingController
+import nl.veerdonk.pillreminder.platform.NavigationDetector
 import nl.veerdonk.pillreminder.platform.WakeDetector
 import java.time.Clock
 import java.time.Instant
@@ -97,6 +98,10 @@ class FakeWakeDetector(private val log: CallLog, vararg answers: Boolean) : Wake
         log.calls += Call.IsAwake(from, to)
         return answers.removeFirstOrNull() ?: false
     }
+}
+
+class FakeNavigationDetector(var navigating: Boolean = false) : NavigationDetector {
+    override fun isNavigating(): Boolean = navigating
 }
 
 class FakeNotifier(private val log: CallLog) : Notifier {

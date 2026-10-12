@@ -13,6 +13,7 @@ import nl.veerdonk.pillreminder.data.SettingsRepository
 import nl.veerdonk.pillreminder.data.StateStore
 import nl.veerdonk.pillreminder.data.history.HistoryRepository
 import nl.veerdonk.pillreminder.platform.AlarmScheduler
+import nl.veerdonk.pillreminder.platform.NavigationDetector
 import nl.veerdonk.pillreminder.platform.Notifier
 import nl.veerdonk.pillreminder.platform.RingController
 import nl.veerdonk.pillreminder.platform.WakeDetector
@@ -37,6 +38,7 @@ class ReminderController(
     private val stateStore: StateStore,
     private val historyRepository: HistoryRepository,
     private val wakeDetector: WakeDetector,
+    private val navigationDetector: NavigationDetector,
     private val notifier: Notifier,
     private val ringController: RingController,
     private val alarmScheduler: AlarmScheduler,
@@ -64,14 +66,20 @@ class ReminderController(
             // Detection only runs for a Tick that finds the day in DETECTING. A state that is
             // about to roll over is not "in DETECTING" for this purpose: its window is a past day's.
             val detectNow = event is Event.Tick && state.phase == Phase.DETECTING && state.dayId == today
-            val input = if (event is Event.Tick) Event.Tick(detectNow && isAwake(today, settings, now, zone)) else event
+            // Navigation is a cheap in-memory check, so every Tick carries it (FR-3.8).
+            val navigating = event is Event.Tick && navigationDetector.isNavigating()
+            val input = if (event is Event.Tick) {
+                Event.Tick(detectNow && isAwake(today, settings, now, zone), navigating)
+            } else {
+                event
+            }
             var t = Engine.reduce(state, input, settings, now, zone)
             // Second-tick rule (02 §4): the Tick moved the day into DETECTING, but the engine
             // ignores wakeDetected on that move, so detect now and tick once more. The same
             // `now` can't roll over again, so the first reduce's finishedDay stands.
             if (event is Event.Tick && !detectNow && t.state.phase == Phase.DETECTING) {
                 val detected = isAwake(today, settings, now, zone)
-                t = t.copy(state = Engine.reduce(t.state, Event.Tick(detected), settings, now, zone).state)
+                t = t.copy(state = Engine.reduce(t.state, Event.Tick(detected, navigating), settings, now, zone).state)
             }
 
             t.finishedDay?.let { historyRepository.upsert(it) }
@@ -81,7 +89,7 @@ class ReminderController(
         }
     }
 
-    /** A time-based Tick. `wakeDetected` is filled in by [handle]. */
+    /** A time-based Tick. `wakeDetected` and `navigating` are filled in by [handle]. */
     suspend fun tick() = handle(Event.Tick(false))
 
     /**
@@ -113,7 +121,10 @@ class ReminderController(
     }
 
     private companion object {
-        /** Phases whose next wake-up is a deadline the user sees (design §5): `setAlarmClock`. */
+        /**
+         * Phases whose next wake-up is a deadline the user sees (design §5): `setAlarmClock`.
+         * Not HELD_DRIVING: its wake-up is only a backup re-check (design §6a).
+         */
         val USER_VISIBLE_PHASES = setOf(Phase.WAITING, Phase.REMINDER, Phase.RINGING, Phase.SNOOZED)
     }
 }

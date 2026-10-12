@@ -18,6 +18,7 @@ enum class Phase {
     REMINDER, // dose N reminder notification visible, escalation timer running
     RINGING, // dose N alarm ringing
     SNOOZED, // dose N alarm snoozed
+    HELD_DRIVING, // dose N alarm due, but held while Google Maps is navigating (FR-3.8)
     PENDING_SILENT, // dose N: snoozes exhausted, ongoing notification only, no more alarms
     DONE, // all doses taken, or rest of day skipped
 }

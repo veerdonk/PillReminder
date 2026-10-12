@@ -119,6 +119,7 @@ private fun NextActionLine(action: NextAction, zone: ZoneId) {
         is NextAction.AlarmAt -> stringResource(R.string.next_alarm_at, formatTime(action.at, zone))
         NextAction.Ringing -> stringResource(R.string.next_ringing)
         is NextAction.SnoozedUntil -> stringResource(R.string.next_snoozed_until, formatTime(action.until, zone))
+        NextAction.HeldWhileDriving -> stringResource(R.string.next_held_driving)
         NextAction.NoMoreAlarms -> stringResource(R.string.next_no_more_alarms)
         is NextAction.DoneUntil -> stringResource(R.string.next_done_until, formatTime(action.nextDayAt, zone))
     }

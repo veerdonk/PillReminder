@@ -62,6 +62,7 @@ class ReminderControllerTest {
         val store = FakeStateStore(log, initial)
         val history = FakeHistoryRepository(log)
         val detector = FakeWakeDetector(log, *awake)
+        val navigation = FakeNavigationDetector()
         val controller = ReminderController(
             clock = clock,
             zone = { zone },
@@ -69,6 +70,7 @@ class ReminderControllerTest {
             stateStore = store,
             historyRepository = history,
             wakeDetector = detector,
+            navigationDetector = navigation,
             notifier = FakeNotifier(log),
             ringController = FakeRingController(log),
             alarmScheduler = FakeAlarmScheduler(log),
@@ -407,6 +409,35 @@ class ReminderControllerTest {
         assertEquals(Phase.RINGING, h.state.phase)
     }
 
+    // --- navigation holds the alarm (FR-3.8) ---
+
+    @Test
+    fun `a ringing alarm is held while navigating and rings again once navigation ends`() = runTest {
+        val h = harness(ringing, t("07:41"))
+        h.navigation.navigating = true
+        h.controller.tick()
+        assertEquals(Phase.HELD_DRIVING, h.state.phase)
+        assertTrue(h.platformCalls().none { it is Call.EnsureRinging })
+        assertTrue(h.platformCalls().any { it is Call.EnsureStopped })
+        // The backup re-check is not a deadline the user sees.
+        assertEquals(Call.Schedule(t("07:46"), userVisible = false), h.lastSchedule())
+
+        h.navigation.navigating = false
+        h.clock.now = t("08:10")
+        h.controller.tick()
+        assertEquals(Phase.RINGING, h.state.phase)
+        assertEquals(t("08:10"), h.state.ringingSince)
+        assertEquals(0, h.state.snoozesUsed)
+    }
+
+    @Test
+    fun `a user event ignores navigation`() = runTest {
+        val h = harness(reminder, t("07:30"))
+        h.navigation.navigating = true
+        h.controller.handle(Event.TookDose(1, t("07:30"), DoseSource.NOTIFICATION))
+        assertEquals(Phase.WAITING, h.state.phase)
+    }
+
     @Test
     fun `the zone is read on every call`() = runTest {
         var zone = ams
@@ -419,6 +450,7 @@ class ReminderControllerTest {
             stateStore = store,
             historyRepository = FakeHistoryRepository(log),
             wakeDetector = FakeWakeDetector(log),
+            navigationDetector = FakeNavigationDetector(),
             notifier = FakeNotifier(log),
             ringController = FakeRingController(log),
             alarmScheduler = FakeAlarmScheduler(log),

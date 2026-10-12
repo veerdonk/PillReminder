@@ -29,6 +29,12 @@ object Engine {
 
     private val OVERDUE_DELAY: Duration = Duration.ofSeconds(1)
 
+    /**
+     * While an alarm is held for driving, re-check this often. It is only a backup: the
+     * notification listener ticks as soon as navigation ends (FR-3.8, design §6a).
+     */
+    val NAVIGATION_RECHECK_INTERVAL: Duration = Duration.ofMinutes(5)
+
     /** A fresh day: BEFORE_WINDOW, dose 1, no doses, every other field null/0. */
     fun fresh(dayId: LocalDate): DayState =
         DayState(dayId = dayId, phase = Phase.BEFORE_WINDOW, nextDose = 1, doses = emptyList())
@@ -89,6 +95,10 @@ object Engine {
                 reminder = reminder(alarmStyle = false, subtitle = ReminderSubtitle.Snoozed(end))
                 end
             }
+            Phase.HELD_DRIVING -> {
+                reminder = reminder(alarmStyle = false, subtitle = ReminderSubtitle.HeldWhileDriving)
+                now + NAVIGATION_RECHECK_INTERVAL
+            }
             Phase.PENDING_SILENT -> {
                 reminder = reminder(alarmStyle = false, subtitle = ReminderSubtitle.AlarmStopped)
                 rolloverAt
@@ -102,7 +112,7 @@ object Engine {
 
     private fun process(state: DayState, event: Event, s: Settings, now: Instant, zone: ZoneId): DayState =
         when (event) {
-            is Event.Tick -> tick(state, event.wakeDetected, s, now, zone)
+            is Event.Tick -> tick(state, event.wakeDetected, event.navigating, s, now, zone)
             is Event.TookDose -> tookDose(state, event, s, now, zone)
             is Event.SkipRest -> skipRest(state, event, s)
             is Event.Snooze -> snooze(state, event, s, now)
@@ -134,19 +144,33 @@ object Engine {
 
     // --- 4.2 Tick ---
 
-    private fun tick(state: DayState, wakeDetected: Boolean, s: Settings, now: Instant, zone: ZoneId): DayState {
+    private fun tick(
+        state: DayState,
+        wakeDetected: Boolean,
+        navigating: Boolean,
+        s: Settings,
+        now: Instant,
+        zone: ZoneId,
+    ): DayState {
         // Detection only ran if the day was already DETECTING (02 §6, FR-1.6; assumption A10).
         val detected = wakeDetected && state.phase == Phase.DETECTING
         var current = state
         repeat(MAX_TICK_ITERATIONS) {
-            val next = tickOnce(current, detected, s, now, zone)
+            val next = tickOnce(current, detected, navigating, s, now, zone)
             if (next.phase == current.phase) return next
             current = next
         }
         return current
     }
 
-    private fun tickOnce(state: DayState, wakeDetected: Boolean, s: Settings, now: Instant, zone: ZoneId): DayState {
+    private fun tickOnce(
+        state: DayState,
+        wakeDetected: Boolean,
+        navigating: Boolean,
+        s: Settings,
+        now: Instant,
+        zone: ZoneId,
+    ): DayState {
         // dosesPerDay lowered below nextDose: the day is complete, nothing recorded.
         if (state.phase != Phase.DONE && state.nextDose > s.dosesPerDay) {
             return state.copy(phase = Phase.DONE).clearPerDose()
@@ -169,10 +193,12 @@ object Engine {
             // A missing base timestamp (corrupt state) restarts that phase's timer from now (A10).
             Phase.REMINDER -> when {
                 state.reminderShownAt == null -> state.copy(reminderShownAt = now)
-                reached(escalateAt(state, s, zone), now) -> state.copy(phase = Phase.RINGING, ringingSince = now)
+                reached(escalateAt(state, s, zone), now) -> startRinging(state, navigating, now)
                 else -> state
             }
             Phase.RINGING -> when {
+                // Navigation started while ringing: stop without using a snooze (FR-3.8).
+                navigating -> state.copy(phase = Phase.HELD_DRIVING, ringingSince = null)
                 state.ringingSince == null -> state.copy(ringingSince = now)
                 !reached(ringEndAt(state, s), now) -> state
                 canSnooze(state, s) ->
@@ -181,12 +207,22 @@ object Engine {
             }
             Phase.SNOOZED -> when {
                 state.snoozedAt == null -> state.copy(snoozedAt = now)
-                reached(snoozeEndAt(state, s), now) -> state.copy(phase = Phase.RINGING, ringingSince = now)
+                reached(snoozeEndAt(state, s), now) -> startRinging(state, navigating, now)
                 else -> state
             }
+            Phase.HELD_DRIVING ->
+                if (navigating) state else state.copy(phase = Phase.RINGING, ringingSince = now)
             Phase.PENDING_SILENT, Phase.DONE -> state
         }
     }
+
+    /** A due alarm rings, unless Google Maps is navigating: then it is held (FR-3.8). */
+    private fun startRinging(state: DayState, navigating: Boolean, now: Instant): DayState =
+        if (navigating) {
+            state.copy(phase = Phase.HELD_DRIVING)
+        } else {
+            state.copy(phase = Phase.RINGING, ringingSince = now)
+        }
 
     private fun wake(state: DayState, source: WakeSource, now: Instant): DayState = state.copy(
         phase = Phase.REMINDER,
@@ -223,7 +259,7 @@ object Engine {
             wakeSource = if (manualWake) WakeSource.MANUAL else state.wakeSource,
         ).clearPerDose()
         // A backdated dose may already be due.
-        return tick(taken, wakeDetected = false, s, now, zone)
+        return tick(taken, wakeDetected = false, navigating = false, s, now, zone)
     }
 
     private fun skipRest(state: DayState, e: Event.SkipRest, s: Settings): DayState {

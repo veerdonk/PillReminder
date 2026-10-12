@@ -56,15 +56,24 @@ class SetupStatusTest {
 
     @Test
     fun `banner shows for any missing item, hard or soft`() {
-        for (item in SetupItem.entries) {
+        for (item in SetupItem.entries.filter { !it.optional }) {
             assertTrue("$item", allExcept(item).showBanner)
         }
     }
 
     @Test
+    fun `an optional item is never missing and raises no banner`() {
+        val status = allExcept(SetupItem.MAPS_NAVIGATION)
+        assertFalse(status.isOk(SetupItem.MAPS_NAVIGATION))
+        assertTrue(status.missing.isEmpty())
+        assertFalse(status.showBanner)
+        assertFalse(status.isSetupNeeded(setupSeen = true))
+    }
+
+    @Test
     fun `no item ok means everything is missing`() {
         val status = SetupStatus(emptySet())
-        assertEquals(SetupItem.entries.toList(), status.missing)
+        assertEquals(SetupItem.entries.filter { !it.optional }, status.missing)
         assertEquals(listOf(SetupItem.NOTIFICATIONS, SetupItem.EXACT_ALARMS), status.missingHard)
     }
 }

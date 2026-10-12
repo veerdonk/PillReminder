@@ -42,6 +42,7 @@ internal fun outputs(state: DayState, now: Instant, s: Settings = DEFAULTS): Out
 
 internal val tick = Event.Tick(wakeDetected = false)
 internal val tickAwake = Event.Tick(wakeDetected = true)
+internal val tickNavigating = Event.Tick(wakeDetected = false, navigating = true)
 
 internal fun taken(index: Int, at: Instant, source: DoseSource = DoseSource.NOTIFICATION) =
     DoseRecord(index, DoseStatus.TAKEN, at, source, snoozesUsed = 0, firstRemindedAt = null)
@@ -79,6 +80,10 @@ internal fun snoozed(dose: Int = 1, snoozedAt: Instant = t("07:42"), snoozesUsed
     ringing(dose, snoozedAt.minus(DEFAULTS.alarmRingDuration), snoozesUsed)
         .copy(phase = Phase.SNOOZED, snoozedAt = snoozedAt, ringingSince = null)
 
+/** The alarm for [dose] came due at 07:40 but was held because Maps was navigating (FR-3.8). */
+internal fun heldDriving(dose: Int = 1, snoozesUsed: Int = 0): DayState =
+    reminder(dose, t("07:25"), snoozesUsed).copy(phase = Phase.HELD_DRIVING)
+
 internal fun pendingSilent(dose: Int = 1): DayState =
     ringing(dose, t("08:20"), snoozesUsed = DEFAULTS.maxSnoozes)
         .copy(phase = Phase.PENDING_SILENT, ringingSince = null)
@@ -109,6 +114,7 @@ internal fun stateIn(phase: Phase): DayState = when (phase) {
     Phase.REMINDER -> reminder()
     Phase.RINGING -> ringing()
     Phase.SNOOZED -> snoozed()
+    Phase.HELD_DRIVING -> heldDriving()
     Phase.PENDING_SILENT -> pendingSilent()
     Phase.DONE -> done()
 }

@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.AlarmManager
 import android.app.AppOpsManager
 import android.app.NotificationManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -59,6 +60,8 @@ class AndroidPermissionChecker(private val context: Context) : PermissionChecker
         SetupItem.FULL_SCREEN_INTENT -> fullScreenIntentOk()
         SetupItem.BATTERY_OPTIMISATION ->
             context.getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(context.packageName)
+        SetupItem.MAPS_NAVIGATION ->
+            context.packageName in NotificationManagerCompat.getEnabledListenerPackages(context)
         SetupItem.ONEPLUS_EXTRAS -> onePlusDone
     }
 
@@ -101,6 +104,11 @@ class AndroidPermissionChecker(private val context: Context) : PermissionChecker
                 appDetailsIntent()
             }
         SetupItem.BATTERY_OPTIMISATION -> batteryIntent()
+        SetupItem.MAPS_NAVIGATION ->
+            Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS).putExtra(
+                Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME,
+                ComponentName(context, MapsNavigationListener::class.java).flattenToString(),
+            )
         SetupItem.ONEPLUS_EXTRAS -> appDetailsIntent()
     }
 

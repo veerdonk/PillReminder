@@ -59,5 +59,6 @@ Use `adb shell dumpsys alarm | grep -A3 pillreminder` to check scheduled wake-up
 | M22 | Missed | Leave a dose pending through rollover. | History shows it as "missed". |
 | M23 | Timezone | Change the phone's timezone while WAITING. | No crash. The reminder fires at the same absolute time. |
 | M24 | Overnight Doze | Real-world check: set defaults and leave the phone overnight. | The dose 1 reminder arrives the next morning after the first real phone use after 07:00. |
+| M25 | Driving hold | Grant notification access (Setup). Start Google Maps navigation, then let a reminder escalate (or tap Snooze and wait). End navigation. | No ringing while navigating; the reminder says "Alarm held while you drive". The alarm rings within seconds of ending navigation. Settings → Advanced → Maps navigation says "navigating: yes" during navigation. |
 
 Then restore the default settings.

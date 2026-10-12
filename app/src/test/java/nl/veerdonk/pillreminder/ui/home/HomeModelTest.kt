@@ -145,6 +145,7 @@ class HomeModelTest {
         val snoozed = state(Phase.SNOOZED).copy(snoozedAt = at("09:10"), snoozesUsed = 1)
         assertEquals(NextAction.SnoozedUntil(at("09:20")), next(snoozed, "09:11"))
         assertEquals(NextAction.NoMoreAlarms, next(state(Phase.PENDING_SILENT), "13:00"))
+        assertEquals(NextAction.HeldWhileDriving, next(state(Phase.HELD_DRIVING), "13:00"))
         assertEquals(NextAction.DoneUntil(at("03:00", day.plusDays(1))), next(state(Phase.DONE), "20:00"))
     }
 
