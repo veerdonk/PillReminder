@@ -299,3 +299,10 @@ Open:
 - **A21** (T7) Without the notification permission, `showReminder` posts nothing and doesn't
   fail, and the state still advances. The setup checklist (T11) and
   the Home banner (FR-6.3) are where a missing permission is surfaced.
+- **A30** (T9) The detection log is not persisted: `AndroidWakeDetector` keeps only the last
+  check in memory (`StateFlow<DetectionLogEntry?>`, plus logcat tag `WakeDetect`). After a process
+  restart it is empty until the next check. A check without Usage Access is logged as "Usage access
+  missing" and counts as not awake.
+- **A31** (T9) Usage Access is checked with `AppOpsManager.unsafeCheckOpNoThrow` on every call, and
+  the default launcher is resolved on every call, so a change in either takes effect on the next
+  poll. If no launcher resolves, only this app and `com.android.systemui` are excluded.
