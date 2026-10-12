@@ -53,6 +53,7 @@ class SettingsRepositoryTest {
         holdFirstAlarmUntilFallback = false,
         dayRolloverTime = LocalTime.MIDNIGHT,
         alarmSoundUri = "content://media/internal/audio/media/42",
+        showStatusNotification = true,
     )
 
     @Test
@@ -136,6 +137,15 @@ class SettingsRepositoryTest {
         // A minute-of-day outside 0..1439 can't even be turned into a LocalTime.
         store.edit { it[intPreferencesKey("day_rollover_time")] = 24 * 60 }
         assertEquals(Settings(), repo.current())
+    }
+
+    @Test
+    fun missingStatusNotificationKeyReadsAsOff() = runTest {
+        val store = newDataStore()
+        val repo = DataStoreSettingsRepository(store)
+        repo.update(allChanged)
+        store.edit { it.remove(booleanPreferencesKey("show_status_notification")) }
+        assertEquals(allChanged.copy(showStatusNotification = false), repo.current())
     }
 
     @Test

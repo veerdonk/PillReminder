@@ -4,6 +4,7 @@
     <!-- Notification channels (design §7) -->
     <string name="channel_reminders_name">Pill reminders</string>
     <string name="channel_alarm_name">Pill alarm</string>
+    <string name="channel_status_name">Time until next pill</string>
 
     <!-- Reminder and alarm notification (FR-2, FR-3.2) -->
     <string name="notification_title">Time for pill %1$d of %2$d</string>
@@ -11,6 +12,12 @@
     <string name="notification_subtitle_snoozed">Snoozed until %1$s</string>
     <string name="notification_subtitle_alarm_stopped">Alarm stopped — please take your pill</string>
     <string name="notification_subtitle_held_driving">Alarm held while you drive</string>
+    <string name="status_next_title">Pill %1$d of %2$d at %3$s</string>
+    <string name="status_next_text">Counting down to your next pill</string>
+    <string name="status_wake_title">Once you\'re up: pill 1 of %1$d</string>
+    <string name="status_wake_text">By %1$s at the latest</string>
+    <string name="status_done_title">All done for today</string>
+    <string name="status_done_text">Next pill tomorrow, once you\'re up</string>
 
     <!-- Notification buttons -->
     <string name="action_took">I took my pill</string>
@@ -157,6 +164,8 @@
     <string name="setting_snooze_duration">Snooze duration, minutes (1–60)</string>
     <string name="setting_max_snoozes">Max snoozes (0–10)</string>
     <string name="setting_hold_first_alarm">First alarm waits for fallback</string>
+    <string name="setting_status_notification">Always show next pill</string>
+    <string name="setting_status_notification_hint">Keeps a notification showing between doses, with a countdown to the next pill.</string>
     <string name="setting_hold_first_alarm_hint">When you\'re detected as awake, the first reminder still appears right away, but its alarm doesn\'t ring before the fallback time.</string>
     <string name="setting_ring_duration">Ring duration, minutes (1–10)</string>
     <string name="setting_poll_interval">Detection poll interval, minutes (1–15)</string>

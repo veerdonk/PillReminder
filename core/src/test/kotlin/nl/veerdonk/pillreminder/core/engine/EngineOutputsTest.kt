@@ -4,6 +4,7 @@ import nl.veerdonk.pillreminder.core.model.Outputs
 import nl.veerdonk.pillreminder.core.model.ReminderSpec
 import nl.veerdonk.pillreminder.core.model.ReminderSubtitle
 import nl.veerdonk.pillreminder.core.model.RingSpec
+import nl.veerdonk.pillreminder.core.model.StatusSpec
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.time.ZoneId
@@ -170,5 +171,47 @@ class EngineOutputsTest {
         val utc = ZoneId.of("UTC")
         val out = Engine.outputs(done(), DEFAULTS, t("16:00"), utc)
         assertEquals(java.time.Instant.parse("${NEXT_DAY}T03:00:00Z"), out.nextWakeAt)
+    }
+
+    // Status notification (FR-2.4)
+
+    private val withStatus = DEFAULTS.copy(showStatusNotification = true)
+
+    @Test
+    fun `status is off by default`() {
+        assertEquals(null, outputs(waiting(takenAt = t("08:00")), t("08:00")).status)
+        assertEquals(null, outputs(done(), t("20:00")).status)
+    }
+
+    @Test
+    fun `status counts down to dueAt while WAITING`() {
+        val out = outputs(waiting(takenAt = t("08:00")), t("08:00"), withStatus)
+        assertEquals(Outputs(null, null, t("11:50"), StatusSpec.NextDose(2, 3, t("11:50"))), out)
+    }
+
+    @Test
+    fun `status waits for wake-up before dose 1`() {
+        val expected = StatusSpec.WaitingForWake(3, t("10:30"))
+        assertEquals(expected, outputs(beforeWindow(), t("03:00"), withStatus).status)
+        assertEquals(expected, outputs(detecting(), t("07:00"), withStatus).status)
+    }
+
+    @Test
+    fun `status says done in DONE`() {
+        assertEquals(StatusSpec.DoneForToday, outputs(done(), t("20:00"), withStatus).status)
+    }
+
+    @Test
+    fun `status is null while a reminder or alarm shows`() {
+        for (state in listOf(reminder(dose = 2, shownAt = t("11:25")), ringing(), snoozed(), heldDriving(), pendingSilent())) {
+            assertEquals(state.phase.name, null, outputs(state, t("11:30"), withStatus).status)
+        }
+    }
+
+    @Test
+    fun `status does not change nextWakeAt`() {
+        for (state in listOf(beforeWindow(), detecting(), waiting(takenAt = t("08:00")), done())) {
+            assertEquals(outputs(state, t("07:00")).nextWakeAt, outputs(state, t("07:00"), withStatus).nextWakeAt)
+        }
     }
 }

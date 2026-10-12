@@ -18,9 +18,11 @@ import nl.veerdonk.pillreminder.core.model.DoseSource
 import nl.veerdonk.pillreminder.core.model.ReminderSpec
 import nl.veerdonk.pillreminder.core.model.ReminderSubtitle
 import nl.veerdonk.pillreminder.core.model.RingSpec
+import nl.veerdonk.pillreminder.core.model.StatusSpec
 import nl.veerdonk.pillreminder.platform.receivers.ActionReceiver
 import nl.veerdonk.pillreminder.ui.MainActivity
 import nl.veerdonk.pillreminder.ui.alarm.AlarmActivity
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -28,7 +30,8 @@ import java.time.format.DateTimeFormatter
 /**
  * [Notifier] on the system notification manager (docs/03-technical-design.md §7). The reminder
  * use [NOTIFICATION_ID]; the alarm (the ring service's foreground notification) uses
- * [ALARM_NOTIFICATION_ID]. They are separate because the system removes a foreground service's
+ * [ALARM_NOTIFICATION_ID]; the optional status notification (FR-2.4) uses
+ * [STATUS_NOTIFICATION_ID]. The first two are separate because the system removes a foreground service's
  * notification by ID, asynchronously, after the service stops, which would also remove a
  * reminder re-posted on the same ID. The controller keeps at most one visible (01 A26).
  *
@@ -67,9 +70,19 @@ class AndroidNotifier(
             setSound(null, null)
             enableVibration(false)
         }
+        // Silent and low: it's only there to glance at (FR-2.4).
+        val status = NotificationChannel(
+            CHANNEL_STATUS,
+            context.getString(R.string.channel_status_name),
+            NotificationManager.IMPORTANCE_LOW,
+        ).apply {
+            setSound(null, null)
+            enableVibration(false)
+            setShowBadge(false)
+        }
         // Creating an existing channel only updates its name, so this is safe on every start.
         context.getSystemService(NotificationManager::class.java)
-            .createNotificationChannels(listOf(reminders, alarm))
+            .createNotificationChannels(listOf(reminders, alarm, status))
     }
 
     override fun showReminder(spec: ReminderSpec) {
@@ -88,11 +101,46 @@ class AndroidNotifier(
                 .setSubText(line)
                 .setStyle(NotificationCompat.BigTextStyle().bigText("$line\n${context.getString(R.string.notification_text)}"))
         }
-        post(builder.build())
+        post(NOTIFICATION_ID, builder.build())
     }
 
     override fun cancelReminder() {
         notificationManager.cancel(NOTIFICATION_ID)
+    }
+
+    override fun showStatus(spec: StatusSpec) {
+        val builder = NotificationCompat.Builder(context, CHANNEL_STATUS)
+            .setSmallIcon(R.drawable.ic_stat_pill)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setSilent(true)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setContentIntent(statusContentIntent())
+        when (spec) {
+            is StatusSpec.NextDose -> builder
+                .setContentTitle(context.getString(R.string.status_next_title, spec.dose, spec.doseCount, formatTime(spec.dueAt)))
+                .setContentText(context.getString(R.string.status_next_text))
+                // The system draws the countdown in the header, so no wake-ups are needed for it.
+                .setWhen(spec.dueAt.toEpochMilli())
+                .setShowWhen(true)
+                .setUsesChronometer(true)
+                .setChronometerCountDown(true)
+            is StatusSpec.WaitingForWake -> builder
+                .setContentTitle(context.getString(R.string.status_wake_title, spec.doseCount))
+                .setContentText(context.getString(R.string.status_wake_text, formatTime(spec.fallbackAt)))
+                .setShowWhen(false)
+            StatusSpec.DoneForToday -> builder
+                .setContentTitle(context.getString(R.string.status_done_title))
+                .setContentText(context.getString(R.string.status_done_text))
+                .setShowWhen(false)
+        }
+        post(STATUS_NOTIFICATION_ID, builder.build())
+    }
+
+    override fun cancelStatus() {
+        notificationManager.cancel(STATUS_NOTIFICATION_ID)
     }
 
     override fun buildAlarmNotification(spec: RingSpec): Notification {
@@ -134,17 +182,27 @@ class AndroidNotifier(
     private fun subtitleText(subtitle: ReminderSubtitle): String = when (subtitle) {
         is ReminderSubtitle.Snoozed -> context.getString(
             R.string.notification_subtitle_snoozed,
-            TIME_FORMAT.format(subtitle.until.atZone(zone())),
+            formatTime(subtitle.until),
         )
         ReminderSubtitle.AlarmStopped -> context.getString(R.string.notification_subtitle_alarm_stopped)
         ReminderSubtitle.HeldWhileDriving -> context.getString(R.string.notification_subtitle_held_driving)
     }
 
-    private fun post(notification: Notification) {
+    private fun formatTime(instant: Instant): String = TIME_FORMAT.format(instant.atZone(zone()))
+
+    private fun post(id: Int, notification: Notification) {
         // Without the permission the system would drop the notification anyway; don't call it.
         if (context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
-        notificationManager.notify(NOTIFICATION_ID, notification)
+        notificationManager.notify(id, notification)
     }
+
+    private fun statusContentIntent(): PendingIntent =
+        PendingIntent.getActivity(
+            context,
+            REQUEST_STATUS_CONTENT,
+            Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
 
     // FLAG_UPDATE_CURRENT: each request code is one PendingIntent, whose extras follow the
     // latest dayId and dose.
@@ -170,6 +228,7 @@ class AndroidNotifier(
     companion object {
         const val CHANNEL_REMINDERS = "reminders_v1"
         const val CHANNEL_ALARM = "alarm_v1"
+        const val CHANNEL_STATUS = "status_v1"
 
         /** The reminder notification. */
         const val NOTIFICATION_ID = 1001
@@ -177,11 +236,15 @@ class AndroidNotifier(
         /** The alarm: the ring service's foreground notification. */
         const val ALARM_NOTIFICATION_ID = 1002
 
+        /** The optional status notification between doses (FR-2.4). */
+        const val STATUS_NOTIFICATION_ID = 1003
+
         /** Full-screen and content target of the alarm notification. */
         private val ALARM_SCREEN: Class<out Activity> = AlarmActivity::class.java
 
         private const val REQUEST_CONTENT = 100
         private const val REQUEST_ALARM_SCREEN = 101
+        private const val REQUEST_STATUS_CONTENT = 102
 
         private val TIME_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 

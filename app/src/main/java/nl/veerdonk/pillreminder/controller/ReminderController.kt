@@ -107,6 +107,10 @@ class ReminderController(
      */
     private fun apply(outputs: Outputs, state: DayState) {
         val ringing = outputs.ringing
+        // The status notification is null whenever a reminder or the alarm shows. It is cancelled
+        // before and shown after the others, so only one pill notification is visible (FR-2.4).
+        val status = outputs.status
+        if (status == null) notifier.cancelStatus()
         if (ringing == null) {
             ringController.ensureStopped()
             val reminder = outputs.reminder
@@ -117,6 +121,7 @@ class ReminderController(
             notifier.cancelReminder()
             ringController.ensureRinging(ringing)
         }
+        if (status != null) notifier.showStatus(status)
         alarmScheduler.schedule(outputs.nextWakeAt, userVisible = state.phase in USER_VISIBLE_PHASES)
     }
 

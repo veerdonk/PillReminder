@@ -122,6 +122,9 @@ fun SettingsScreen(
                     viewModel.edit { it.copy(dosesPerDay = v) }
                 }
                 IntervalField(form, errors[SettingsField.DOSE_INTERVAL], viewModel)
+                SwitchField(R.string.setting_status_notification, R.string.setting_status_notification_hint, form.showStatusNotification) { on ->
+                    viewModel.edit { it.copy(showStatusNotification = on) }
+                }
             }
 
             Group(R.string.settings_group_alarm) {

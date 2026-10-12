@@ -10,6 +10,7 @@ import nl.veerdonk.pillreminder.core.model.ReminderSpec
 import nl.veerdonk.pillreminder.core.model.ReminderSubtitle
 import nl.veerdonk.pillreminder.core.model.RingSpec
 import nl.veerdonk.pillreminder.core.model.Settings
+import nl.veerdonk.pillreminder.core.model.StatusSpec
 import nl.veerdonk.pillreminder.core.model.Transition
 import nl.veerdonk.pillreminder.core.model.WakeSource
 import nl.veerdonk.pillreminder.core.time.TimeMath
@@ -107,7 +108,22 @@ object Engine {
         }
         val capped = minOf(wakeAt, rolloverAt)
         val nextWakeAt = if (capped <= now) now + OVERDUE_DELAY else capped
-        return Outputs(reminder = reminder, ringing = ringing, nextWakeAt = nextWakeAt)
+        val status = if (settings.showStatusNotification) status(state, settings, zone) else null
+        return Outputs(reminder = reminder, ringing = ringing, nextWakeAt = nextWakeAt, status = status)
+    }
+
+    /**
+     * The status notification for the phases without a reminder (02 §5, FR-2.4). It needs no
+     * wake-ups of its own: the countdown is drawn by the system, and every phase change it
+     * follows already has one.
+     */
+    private fun status(state: DayState, settings: Settings, zone: ZoneId): StatusSpec? = when (state.phase) {
+        Phase.BEFORE_WINDOW, Phase.DETECTING ->
+            StatusSpec.WaitingForWake(settings.dosesPerDay, TimeMath.fallbackAt(state.dayId, settings, zone))
+        // A WAITING state without a previous dose time is repaired on the next Tick (A10).
+        Phase.WAITING -> dueAt(state, settings)?.let { StatusSpec.NextDose(state.nextDose, settings.dosesPerDay, it) }
+        Phase.DONE -> StatusSpec.DoneForToday
+        else -> null // the reminder or the alarm is showing
     }
 
     private fun process(state: DayState, event: Event, s: Settings, now: Instant, zone: ZoneId): DayState =
