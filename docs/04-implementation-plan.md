@@ -30,6 +30,7 @@ Wave 5:  T12 integration hardening + manual test pass
 | T11 | Setup checklist + PermissionChecker | T1 | [x] |
 | T12 | Integration, hardening, manual test pass | all | [ ] |
 | T13 | Hold the alarm while Maps navigates (FR-3.8) | T3, T6, T11 | [x] |
+| T14 | Optional status notification with countdown (FR-2.4) | T3, T6, T7, T10 | [x] |
 
 T6 integrates T7, T8 and T9 through their interfaces. If one of those isn't done yet,
 T6 uses a no-op/fake implementation and the owning task wires the real one into `AppContainer`.
@@ -281,3 +282,14 @@ install and Setup steps. Mark `[x]` once M1/M24 pass.*
 *Done 2026-10-12 (owner request). Assumption A58 in 01. The on-device check above is open for
 the owner: Settings → Advanced → "Maps navigation" should say "navigating: yes" while Maps
 navigates. If it doesn't, the Maps lines there show what to match on instead.*
+
+## T14 — Optional status notification with countdown
+**Do:**
+- `Settings.showStatusNotification` (default off), stored and editable in Settings → Doses.
+- `Outputs.status` (02 §5) with a test per phase; `Notifier.showStatus`/`cancelStatus` on a
+  low-importance channel, ID 1003, with a system-drawn countdown (design §7).
+
+**Accept when:** unit tests cover the outputs, the controller order and the notification; M26
+passes on the phone.
+
+*Done 2026-10-12 (owner request). Assumption A59 in 01. The owner reports M26 passing.*

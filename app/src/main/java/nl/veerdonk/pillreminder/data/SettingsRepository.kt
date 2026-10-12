@@ -81,6 +81,7 @@ class DataStoreSettingsRepository(
         p[Keys.ALARM_RING_DURATION] = s.alarmRingDuration.wholeMinutes()
         p[Keys.HOLD_FIRST_ALARM] = s.holdFirstAlarmUntilFallback
         p[Keys.DAY_ROLLOVER] = s.dayRolloverTime.minuteOfDay()
+        p[Keys.SHOW_STATUS_NOTIFICATION] = s.showStatusNotification
         val uri = s.alarmSoundUri
         if (uri == null) p.remove(Keys.ALARM_SOUND_URI) else p[Keys.ALARM_SOUND_URI] = uri
     }
@@ -106,6 +107,7 @@ class DataStoreSettingsRepository(
                 holdFirstAlarmUntilFallback = p[Keys.HOLD_FIRST_ALARM] ?: d.holdFirstAlarmUntilFallback,
                 dayRolloverTime = p[Keys.DAY_ROLLOVER]?.toLocalTime() ?: d.dayRolloverTime,
                 alarmSoundUri = p[Keys.ALARM_SOUND_URI],
+                showStatusNotification = p[Keys.SHOW_STATUS_NOTIFICATION] ?: d.showStatusNotification,
             )
         } catch (_: DateTimeException) {
             return d // a minute-of-day outside 0..1439
@@ -133,6 +135,7 @@ class DataStoreSettingsRepository(
         val HOLD_FIRST_ALARM = booleanPreferencesKey("hold_first_alarm_until_fallback")
         val DAY_ROLLOVER = intPreferencesKey("day_rollover_time")
         val ALARM_SOUND_URI = stringPreferencesKey("alarm_sound_uri")
+        val SHOW_STATUS_NOTIFICATION = booleanPreferencesKey("show_status_notification")
     }
 
     companion object {

@@ -96,6 +96,7 @@ data class Settings(
     val holdFirstAlarmUntilFallback: Boolean = true, // FR-3.1a
     val dayRolloverTime: LocalTime = LocalTime.of(3, 0),
     val alarmSoundUri: String? = null,          // null = system default alarm
+    val showStatusNotification: Boolean = false, // FR-2.4
 ) {
     fun validate(): List<String>                 // human-readable errors; empty = valid (ranges in 01 §FR-8)
 }
@@ -165,6 +166,8 @@ interface Notifier {
     fun ensureChannels()
     fun showReminder(spec: ReminderSpec)
     fun cancelReminder()
+    fun showStatus(spec: StatusSpec)   // FR-2.4, ID 1003
+    fun cancelStatus()
     fun buildAlarmNotification(spec: RingSpec): android.app.Notification   // used by the ring service
 }
 interface RingController { fun ensureRinging(spec: RingSpec); fun ensureStopped() }
@@ -282,6 +285,7 @@ so to change them, bump the channel ID.
 |----|------|-----------|-------|-----------|-----|
 | `reminders_v1` | Pill reminders | HIGH | default notification sound | yes | Reminder notification |
 | `alarm_v1` | Pill alarm | HIGH | **none** (service plays sound) | **off** (service vibrates) | Alarm foreground notification with full-screen intent |
+| `status_v1` | Time until next pill | LOW | none | off | Optional status notification (FR-2.4) |
 
 **Two notification IDs:** `1001` for the reminder and `1002` for the alarm (the ring service's
 foreground notification). They must differ: when a foreground service stops, the system removes
@@ -301,6 +305,12 @@ The reminder that follows a ring (subtitle `Snoozed` or `AlarmStopped`) is poste
 - Actions:
   - "I took my pill" → `ActionReceiver` (`ACTION_TOOK`)
   - "Not today" (dose 1) / "I'm done for today" (later doses) → `ActionReceiver` (`ACTION_SKIP`)
+
+**Status notification** (`showStatus`, FR-2.4): ID `1003`, ongoing, silent, content intent →
+`MainActivity`, no buttons. `NextDose` sets `when = dueAt` with `setUsesChronometer(true)` and
+`setChronometerCountDown(true)`, so the system draws the countdown and no wake-ups are added.
+The controller cancels it before reconciling the reminder and alarm, and posts it after them,
+so it never shows next to a reminder (A59).
 
 **Alarm notification** (`buildAlarmNotification`):
 - Channel `alarm_v1`, category `ALARM`, `setFullScreenIntent(AlarmActivity PI, true)`, ongoing.
@@ -410,7 +420,7 @@ type isn't enforced at runtime, but `targetSdk ≥ 34` requires it in the manife
 - **History:** a LazyColumn of days. Each row shows the date, wake time and source, and one chip
   per dose (✓ 07:52 · ✓ 11:50 · ✗ skipped · ! missed), plus the snooze count.
 - **Settings:** grouped into Wake detection (weekday/weekend times and detection thresholds),
-  Doses (count, interval), Alarm (first alarm waits for fallback switch, escalation, snooze duration, max snoozes, ring duration, sound,
+  Doses (count, interval, "Always show next pill" switch), Alarm (first alarm waits for fallback switch, escalation, snooze duration, max snoozes, ring duration, sound,
   Test alarm), and Advanced (poll interval, day rollover, Setup checklist, Reset to defaults).
   - Durations use number fields in minutes; the interval uses an hours + minutes pair.
   - Validation errors are shown inline, and Save is disabled while any field is invalid.

@@ -10,6 +10,7 @@ The owner ran these tests and reported the results. Per-case notes weren't recor
 | Result | Cases |
 |--------|-------|
 | Pass | M2–M23 and M14b. That covers fallback, reminder buttons, escalation, the snooze limit, the dose sequence, skipping, the ringer modes and DND, backdating, reboot, live settings, stale actions, Test alarm, missed doses and timezone. |
+| Pass (2026-10-12) | **M26** (status notification with countdown), owner report on the PR #12 build. |
 | Pending | **M1** (wake detection by unlocking) and **M24** (overnight Doze, real-world detection). Both need a real morning; the first one is scheduled for 2026-10-13. |
 
 Bugs found in review before the manual pass (fixed):

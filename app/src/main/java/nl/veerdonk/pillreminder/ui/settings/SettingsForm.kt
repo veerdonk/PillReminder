@@ -54,6 +54,7 @@ data class SettingsForm(
     val holdFirstAlarm: Boolean,
     val rollover: LocalTime,
     val alarmSoundUri: String?,
+    val showStatusNotification: Boolean,
 ) {
     /** Parses and validates the form. */
     fun parse(): FormResult {
@@ -96,6 +97,7 @@ data class SettingsForm(
             holdFirstAlarmUntilFallback = holdFirstAlarm,
             dayRolloverTime = rollover,
             alarmSoundUri = alarmSoundUri,
+            showStatusNotification = showStatusNotification,
         )
         val problems = settings.validate()
         for (message in problems) {
@@ -126,6 +128,7 @@ data class SettingsForm(
                 holdFirstAlarm = s.holdFirstAlarmUntilFallback,
                 rollover = s.dayRolloverTime,
                 alarmSoundUri = s.alarmSoundUri,
+                showStatusNotification = s.showStatusNotification,
             )
         }
     }

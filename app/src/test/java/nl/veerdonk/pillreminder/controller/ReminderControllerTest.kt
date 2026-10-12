@@ -13,6 +13,7 @@ import nl.veerdonk.pillreminder.core.model.DoseStatus
 import nl.veerdonk.pillreminder.core.model.Event
 import nl.veerdonk.pillreminder.core.model.Phase
 import nl.veerdonk.pillreminder.core.model.Settings
+import nl.veerdonk.pillreminder.core.model.StatusSpec
 import nl.veerdonk.pillreminder.core.model.WakeSource
 import nl.veerdonk.pillreminder.core.time.TimeMath
 import org.junit.Assert.assertEquals
@@ -82,6 +83,12 @@ class ReminderControllerTest {
             it is Call.ShowReminder || it is Call.CancelReminder || it is Call.EnsureRinging ||
                 it is Call.EnsureStopped || it is Call.Schedule || it is Call.Cancel
         }
+
+        /** Notification calls only, including the status notification (FR-2.4). */
+        fun notificationCalls(): List<String> = log.calls.filter {
+            it is Call.ShowReminder || it is Call.CancelReminder || it is Call.ShowStatus ||
+                it is Call.CancelStatus || it is Call.EnsureRinging
+        }.map { it.name }
 
         fun lastSchedule(): Call.Schedule = log.calls.filterIsInstance<Call.Schedule>().last()
     }
@@ -219,7 +226,7 @@ class ReminderControllerTest {
         assertEquals(listOf(finished, fresh), h.history.upserts)
         assertEquals(fresh, h.state)
         assertEquals(
-            listOf("Load", "Upsert", "Save", "Upsert", "EnsureStopped", "CancelReminder", "Schedule"),
+            listOf("Load", "Upsert", "Save", "Upsert", "CancelStatus", "EnsureStopped", "CancelReminder", "Schedule"),
             h.log.names(),
         )
         assertEquals(Call.Upsert(finished), h.log.calls[1])
@@ -274,6 +281,45 @@ class ReminderControllerTest {
         assertEquals(Phase.WAITING, h.state.phase)
         assertEquals(listOf("EnsureStopped", "CancelReminder", "Schedule"), h.platformCalls().map { it.name })
         assertEquals(Call.Schedule(t("07:41") + Settings().doseInterval, userVisible = true), h.lastSchedule())
+    }
+
+    // --- status notification (FR-2.4) ---
+
+    @Test
+    fun `status off - the status notification is only cancelled`() = runTest {
+        val h = harness(ringing, t("07:41"))
+        h.controller.handle(Event.TookDose(1, t("07:41"), DoseSource.ALARM))
+        assertEquals(listOf("CancelStatus", "CancelReminder"), h.notificationCalls())
+    }
+
+    @Test
+    fun `status on - taking a dose cancels the reminder, then shows the countdown`() = runTest {
+        val h = harness(ringing, t("07:41"))
+        h.settings.value = Settings(showStatusNotification = true)
+        h.controller.handle(Event.TookDose(1, t("07:41"), DoseSource.ALARM))
+
+        assertEquals(listOf("CancelReminder", "ShowStatus"), h.notificationCalls())
+        val status = h.log.calls.filterIsInstance<Call.ShowStatus>().single().spec
+        assertEquals(StatusSpec.NextDose(2, 3, t("07:41") + Settings().doseInterval), status)
+    }
+
+    @Test
+    fun `status on - the reminder replaces the countdown, status cancelled first`() = runTest {
+        val h = harness(waiting, t("11:50"))
+        h.settings.value = Settings(showStatusNotification = true)
+        h.controller.tick()
+
+        assertEquals(Phase.REMINDER, h.state.phase)
+        assertEquals(listOf("CancelStatus", "ShowReminder"), h.notificationCalls())
+    }
+
+    @Test
+    fun `status on - ringing cancels the status`() = runTest {
+        val h = harness(reminder, t("10:30"))
+        h.settings.value = Settings(showStatusNotification = true)
+        h.controller.tick()
+
+        assertEquals(listOf("CancelStatus", "CancelReminder", "EnsureRinging"), h.notificationCalls())
     }
 
     @Test

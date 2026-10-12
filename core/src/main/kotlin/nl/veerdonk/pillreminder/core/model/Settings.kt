@@ -29,6 +29,7 @@ data class Settings(
     val holdFirstAlarmUntilFallback: Boolean = true, // FR-3.1a
     val dayRolloverTime: LocalTime = LocalTime.of(3, 0),
     val alarmSoundUri: String? = null, // null = system default alarm
+    val showStatusNotification: Boolean = false, // FR-2.4: persistent notification between doses
 ) {
     /** Human-readable validation errors; an empty list means the settings are valid. */
     fun validate(): List<String> = buildList {

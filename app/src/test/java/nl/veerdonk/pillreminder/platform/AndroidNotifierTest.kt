@@ -10,6 +10,7 @@ import nl.veerdonk.pillreminder.core.model.DoseSource
 import nl.veerdonk.pillreminder.core.model.ReminderSpec
 import nl.veerdonk.pillreminder.core.model.ReminderSubtitle
 import nl.veerdonk.pillreminder.core.model.RingSpec
+import nl.veerdonk.pillreminder.core.model.StatusSpec
 import nl.veerdonk.pillreminder.platform.receivers.ActionReceiver
 import nl.veerdonk.pillreminder.ui.MainActivity
 import nl.veerdonk.pillreminder.ui.alarm.AlarmActivity
@@ -90,9 +91,55 @@ class AndroidNotifierTest {
     }
 
     @Test
+    fun `status channel is low importance without sound or vibration`() {
+        val channel = notificationManager.getNotificationChannel(AndroidNotifier.CHANNEL_STATUS)
+        assertEquals("Time until next pill", channel.name)
+        assertEquals(NotificationManager.IMPORTANCE_LOW, channel.importance)
+        assertNull(channel.sound)
+        assertFalse(channel.shouldVibrate())
+    }
+
+    @Test
+    fun `status for the next dose counts down to its due time`() {
+        val due = Instant.parse("2026-10-13T09:50:00Z") // 11:50 in Amsterdam
+        notifier.showStatus(StatusSpec.NextDose(2, 3, due))
+
+        val n = shadow.getNotification(AndroidNotifier.STATUS_NOTIFICATION_ID)
+        assertEquals(AndroidNotifier.CHANNEL_STATUS, n.channelId)
+        assertTrue(n.flags and Notification.FLAG_ONGOING_EVENT != 0)
+        assertEquals("Pill 2 of 3 at 11:50", n.title)
+        assertEquals(due.toEpochMilli(), n.`when`)
+        assertTrue(n.extras.getBoolean(Notification.EXTRA_SHOW_CHRONOMETER))
+        assertTrue(n.extras.getBoolean(Notification.EXTRA_CHRONOMETER_COUNT_DOWN))
+        assertEquals(MainActivity::class.java.name, shadowOf(n.contentIntent).savedIntent.component?.className)
+        assertNull(shadow.getNotification(AndroidNotifier.NOTIFICATION_ID))
+    }
+
+    @Test
+    fun `status before wake-up and when done has no countdown`() {
+        notifier.showStatus(StatusSpec.WaitingForWake(3, Instant.parse("2026-10-13T08:30:00Z")))
+        val waiting = shadow.getNotification(AndroidNotifier.STATUS_NOTIFICATION_ID)
+        assertEquals("Once you're up: pill 1 of 3", waiting.title)
+        assertEquals("By 10:30 at the latest", waiting.text)
+        assertFalse(waiting.extras.getBoolean(Notification.EXTRA_SHOW_CHRONOMETER))
+
+        notifier.showStatus(StatusSpec.DoneForToday)
+        assertEquals("All done for today", shadow.getNotification(AndroidNotifier.STATUS_NOTIFICATION_ID).title)
+    }
+
+    @Test
+    fun `cancelStatus leaves the reminder`() {
+        notifier.showReminder(reminder(dose = 2))
+        notifier.showStatus(StatusSpec.DoneForToday)
+        notifier.cancelStatus()
+        assertNull(shadow.getNotification(AndroidNotifier.STATUS_NOTIFICATION_ID))
+        assertNotNull(shadow.getNotification(AndroidNotifier.NOTIFICATION_ID))
+    }
+
+    @Test
     fun `ensureChannels can run again`() {
         notifier.ensureChannels()
-        assertEquals(2, notificationManager.notificationChannels.size)
+        assertEquals(3, notificationManager.notificationChannels.size)
     }
 
     @Test

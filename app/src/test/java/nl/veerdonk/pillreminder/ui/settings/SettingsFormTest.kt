@@ -22,6 +22,11 @@ class SettingsFormTest {
         assertEquals(false, defaults.copy(holdFirstAlarm = false).parse().settings!!.holdFirstAlarmUntilFallback)
     }
 
+    @Test fun statusNotificationSwitchRoundTrips() {
+        assertEquals(false, defaults.showStatusNotification)
+        assertEquals(true, defaults.copy(showStatusNotification = true).parse().settings!!.showStatusNotification)
+    }
+
     @Test fun intervalIsHoursPlusMinutes() {
         assertEquals("3", defaults.doseIntervalHours)
         assertEquals("50", defaults.doseIntervalMinutes)

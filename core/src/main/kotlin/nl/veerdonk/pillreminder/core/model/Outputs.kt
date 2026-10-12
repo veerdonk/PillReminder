@@ -15,6 +15,7 @@ data class Outputs(
     val reminder: ReminderSpec?, // ongoing notification to show, or null = cancel
     val ringing: RingSpec?, // alarm must be ringing, or null = must be stopped
     val nextWakeAt: Instant, // exact alarm to schedule
+    val status: StatusSpec? = null, // persistent status notification (FR-2.4), or null = cancel
 )
 
 @Serializable
@@ -58,3 +59,18 @@ data class RingSpec(
     val canSnooze: Boolean,
     val snoozesLeft: Int,
 )
+
+/**
+ * The persistent status notification shown while no reminder or alarm is (FR-2.4). Only set
+ * when `Settings.showStatusNotification` is on. Typed rather than text, like [ReminderSubtitle].
+ */
+sealed interface StatusSpec {
+    /** WAITING: pill [dose] of [doseCount] is due at [dueAt]; `:app` counts down to it. */
+    data class NextDose(val dose: Int, val doseCount: Int, val dueAt: Instant) : StatusSpec
+
+    /** BEFORE_WINDOW, DETECTING: pill 1 comes once you're up, at [fallbackAt] at the latest. */
+    data class WaitingForWake(val doseCount: Int, val fallbackAt: Instant) : StatusSpec
+
+    /** DONE: nothing more today. */
+    data object DoneForToday : StatusSpec
+}

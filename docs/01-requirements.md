@@ -57,6 +57,12 @@ settings to make the app reliable (see `06-device-setup-oneplus.md`).
   opens the app on the Home screen.
 - **FR-2.3** A reminder uses the normal notification sound and vibration. These follow the
   phone's ringer mode as usual.
+- **FR-2.4** (owner request) Optional status notification, a Settings switch "Always show next
+  pill" (`showStatusNotification`, default off). When on, a silent ongoing notification stays
+  up whenever no reminder or alarm shows. Between doses it reads "Pill N of M at HH:MM" with a
+  live countdown to that time; before dose 1 "Once you're up: pill 1 of M, by HH:MM at the
+  latest" (the fallback); after the last dose "All done for today". When a reminder or alarm is
+  due it gives way to it, so only one pill notification shows at a time (A59).
 
 ### FR-3 Escalation to alarm
 - **FR-3.1** If neither reminder button is tapped within `escalationDelay` (default **15 min**)
@@ -166,6 +172,7 @@ alarms are recomputed where the spec defines them in terms of the setting (see s
 | `holdFirstAlarmUntilFallback` | on | on/off | FR-3.1a. Off: dose 1 escalates after `escalationDelay` like other doses. |
 | `dayRolloverTime` | 03:00 | 00:00–06:00 and < both earliest times | Advanced setting |
 | `alarmSound` | System default alarm | Ringtone picker | Nice-to-have |
+| `showStatusNotification` | off | on/off | FR-2.4 |
 
 - The minimum values of 1 minute are deliberate. They let me test the full flow quickly on the
   phone.
@@ -396,3 +403,10 @@ Open:
   listener is a system-bound service, not a foreground service (FR-9.3). On Android 13 a
   sideloaded app's notification access is a "restricted setting": App info › ⋮ › Allow
   restricted settings first.
+- **A59** (owner request) FR-2.4's status notification is a separate notification (ID 1003, low
+  importance channel `status_v1`), not the reminder re-posted: re-posting the reminder's ID with
+  `setOnlyAlertOnce` would silence the reminder when it becomes due. The countdown is the
+  system's chronometer, so it costs no extra alarms or wake-ups; past the due time it shows
+  negative until the reminder replaces it, which is seconds. Before dose 1 there is no countdown
+  because the reminder can come any time once you're detected awake; the fallback time is shown
+  instead. The engine computes it (`Outputs.status`), so it is unit tested with the rest.

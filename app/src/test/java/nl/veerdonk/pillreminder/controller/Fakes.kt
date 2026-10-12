@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import nl.veerdonk.pillreminder.core.model.DayState
 import nl.veerdonk.pillreminder.core.model.ReminderSpec
 import nl.veerdonk.pillreminder.core.model.RingSpec
+import nl.veerdonk.pillreminder.core.model.StatusSpec
 import nl.veerdonk.pillreminder.core.model.Settings
 import nl.veerdonk.pillreminder.data.SettingsRepository
 import nl.veerdonk.pillreminder.data.StateStore
@@ -35,6 +36,8 @@ sealed interface Call {
     data class IsAwake(val from: Instant, val to: Instant) : Call
     data class ShowReminder(val spec: ReminderSpec) : Call
     data object CancelReminder : Call
+    data class ShowStatus(val spec: StatusSpec) : Call
+    data object CancelStatus : Call
     data class EnsureRinging(val spec: RingSpec) : Call
     data object EnsureStopped : Call
     data class Schedule(val at: Instant, val userVisible: Boolean) : Call
@@ -112,6 +115,14 @@ class FakeNotifier(private val log: CallLog) : Notifier {
 
     override fun cancelReminder() {
         log.calls += Call.CancelReminder
+    }
+
+    override fun showStatus(spec: StatusSpec) {
+        log.calls += Call.ShowStatus(spec)
+    }
+
+    override fun cancelStatus() {
+        log.calls += Call.CancelStatus
     }
 
     override fun buildAlarmNotification(spec: RingSpec): Notification =

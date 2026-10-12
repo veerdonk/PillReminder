@@ -209,6 +209,7 @@ data class Outputs(
     val reminder: ReminderSpec?,   // ongoing notification to show, or null = cancel
     val ringing: RingSpec?,        // alarm must be ringing, or null = must be stopped
     val nextWakeAt: Instant,       // exact alarm to schedule
+    val status: StatusSpec? = null, // FR-2.4 status notification, only with S.showStatusNotification
 )
 data class ReminderSpec(val dayId: LocalDate, val dose: Int, val doseCount: Int, val alarmStyle: Boolean, val canSnooze: Boolean, val snoozesLeft: Int, val subtitle: ReminderSubtitle?)
 sealed interface ReminderSubtitle {                 // worded by :app from strings.xml (A9)
@@ -217,6 +218,11 @@ sealed interface ReminderSubtitle {                 // worded by :app from strin
     data object HeldWhileDriving : ReminderSubtitle              // "Alarm held while you drive"
 }
 data class RingSpec(val dayId: LocalDate, val dose: Int, val doseCount: Int, val canSnooze: Boolean, val snoozesLeft: Int)
+sealed interface StatusSpec {                       // worded by :app
+    data class NextDose(val dose: Int, val doseCount: Int, val dueAt: Instant) : StatusSpec  // WAITING, counts down to dueAt
+    data class WaitingForWake(val doseCount: Int, val fallbackAt: Instant) : StatusSpec      // BEFORE_WINDOW, DETECTING
+    data object DoneForToday : StatusSpec                                                    // DONE
+}
 
 fun outputs(state: DayState, s: Settings, now: Instant, zone: ZoneId): Outputs
 ```
@@ -232,6 +238,10 @@ fun outputs(state: DayState, s: Settings, now: Instant, zone: ZoneId): Outputs
 | HELD_DRIVING | normal style, subtitle `HeldWhileDriving` ("Alarm held while you drive") | null | `now + 5 min` (`Engine.NAVIGATION_RECHECK_INTERVAL`, a backup re-check) |
 | PENDING_SILENT | normal style, subtitle `AlarmStopped` ("Alarm stopped — please take your pill") | null | `nextRolloverAt` |
 | DONE | null | null | `nextRolloverAt` |
+
+`status` is null unless `S.showStatusNotification` is on. Then it is `WaitingForWake(fallbackAt)` in
+BEFORE_WINDOW and DETECTING, `NextDose(nextDose, dueAt)` in WAITING (null if `dueAt` is missing),
+`DoneForToday` in DONE, and null in every phase that shows a reminder. It never changes `nextWakeAt`.
 
 If `nextWakeAt ≤ now` (an overdue deadline that the Tick loop didn't resolve, which shouldn't
 happen), schedule it for `now + 1 s`.
