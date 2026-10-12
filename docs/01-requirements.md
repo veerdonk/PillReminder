@@ -372,5 +372,7 @@ Open:
   `reminderShownAt == wakeAt`). A reminder the user asked for (Remind me now, Resume today)
   escalates after `escalationDelay` as usual. It is derived, not stored:
   `escalateAt = max(reminderShownAt + escalationDelay, fallbackAt(dayId))` in that case. A
-  reminder shown at or after the fallback time escalates after `escalationDelay` as before. Doses 2 and later are unchanged. It is a switch in Settings → Alarm
+  reminder shown at or after the fallback time escalates after `escalationDelay` as before. A
+  corrupt REMINDER whose `reminderShownAt` is repaired to `now` (A10) is no longer held: it
+  rings after `escalationDelay` rather than risk staying silent. Doses 2 and later are unchanged. It is a switch in Settings → Alarm
   (`holdFirstAlarmUntilFallback`, default on); off restores the plain FR-3.1 behaviour.

@@ -154,6 +154,16 @@ class EngineTickTest {
     }
 
     @Test
+    fun `dose 1 REMINDER from Remind me now after PENDING_SILENT is not held`() {
+        // Detected day; the alarm already ran out of snoozes before the fallback (hold off then).
+        val silent = pendingSilent(dose = 1)
+        assertEquals(WakeSource.DETECTED, silent.wakeSource)
+        val reminded = step(silent, Event.RemindNow, t("09:00"))
+        assertEquals(Phase.REMINDER, step(reminded, tick, t("09:14:59")).phase)
+        assertEquals(Phase.RINGING, step(reminded, tick, t("09:15")).phase)
+    }
+
+    @Test
     fun `dose 1 REMINDER from Resume today is not held until fallback`() {
         // Woken by detection at 07:25, "Not today" at 07:30, resumed at 08:00.
         val skipped = step(reminder(dose = 1, shownAt = t("07:25")), Event.SkipRest(1), t("07:30"))

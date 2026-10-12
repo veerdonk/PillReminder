@@ -36,7 +36,8 @@ Use `adb shell dumpsys alarm | grep -A3 pillreminder` to check scheduled wake-up
 | M2 | Fallback | Leave the phone untouched past earliest until fallback. | The dose 1 reminder appears at fallback. Wake source is "fallback". |
 | M3 | Reminder buttons | Check the dose 1 notification. | It has "I took my pill" and "Not today", and can't be swiped away. |
 | M4 | Escalation, locked | Lock the phone and ignore the reminder. | After 1 min the screen turns on with the full-screen alarm, sound and vibration. |
-| M4b | Dose 1 waits for fallback | Switch on. After M1 (reminder shown by detection before fallback), ignore it. | No alarm until the fallback time. Home shows "Alarm at HH:MM" while it's more than 60 min away, then "Alarm in N min". A dose 1 reminder from "Remind me now" still rings after 1 min. |
+| M4b | Dose 1 waits for fallback | Switch on, fallback set more than 60 min after earliest. After M1 (reminder shown by detection), ignore it. | No alarm until the fallback time. Home shows "Alarm at HH:MM" while it's more than 60 min away, then "Alarm in N min". |
+| M4c | Remind me now is not held | Switch on, fresh day, in DETECTING tap "Remind me now" and ignore the reminder. | The alarm rings after the escalation delay, not at the fallback time. |
 | M5 | Escalation, in use | Use another app and ignore the reminder. | The alarm activity appears (or a heads-up plus sound), and sound plays. |
 | M6 | Ring timeout → snooze | Don't touch the alarm. | It stops after 1 min. The notification says "Snoozed until …", and it rings again 1 min later. |
 | M7 | Snooze limit | Let it time out or snooze twice. | On the third ring there's no Snooze button. After its timeout the ringing stops and the ongoing notification remains. Nothing rings again. |
