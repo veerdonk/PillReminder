@@ -5,6 +5,10 @@
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <!-- Re-arm the wake-up after a reboot (FR-9.2). -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Reminder and alarm notifications (design §7). Runtime permission; T11 requests it. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- The alarm notification's full-screen intent (FR-3.2, design §7). -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
     <application
         android:name=".PillReminderApp"
@@ -27,6 +31,11 @@
 
         <receiver
             android:name=".platform.receivers.WakeupReceiver"
+            android:exported="false" />
+
+        <!-- Notification buttons (design §7). Reached only through the app's own PendingIntents. -->
+        <receiver
+            android:name=".platform.receivers.ActionReceiver"
             android:exported="false" />
 
         <receiver

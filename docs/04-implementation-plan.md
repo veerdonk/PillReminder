@@ -23,7 +23,7 @@ Wave 5:  T12 integration hardening + manual test pass
 | T4 | WakeRule | T2 | [x] |
 | T5 | Data layer (settings, state, history) | T2 | [x] |
 | T6 | Scheduler, receivers, ReminderController | T3, T5 | [x] |
-| T7 | Notifications + ActionReceiver | T2 | [ ] |
+| T7 | Notifications + ActionReceiver | T2 | [x] |
 | T8 | Alarm ring service + AlarmActivity | T7 | [ ] |
 | T9 | UsageEventSource + AndroidWakeDetector | T4 | [ ] |
 | T10 | Main UI: Home, Record dose, History, Settings | T5, T6 | [ ] |
@@ -154,6 +154,12 @@ the device is still open for the owner.*
   "I took my pill / I'm done for today".
 - It can't be swiped away.
 - The buttons update the state, and the notification disappears or updates accordingly.
+
+*Done 2026-10-12. `AndroidNotifier` (channels, reminder, `buildAlarmNotification`) replaces
+`NoOpNotifier`; `ActionReceiver` maps buttons to events through the pure `parseAction` and
+passes the dayId as `expectedDayId`. Adds POST_NOTIFICATIONS and USE_FULL_SCREEN_INTENT. The
+alarm's full-screen target is MainActivity until T8 changes `AndroidNotifier.ALARM_SCREEN` to
+AlarmActivity. Assumptions A17–A21 in 01. The on-device checks above are still open for the owner.*
 
 ## T8 — Alarm ring service + AlarmActivity
 **Do:**

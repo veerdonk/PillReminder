@@ -1,0 +1,15 @@
+<!-- Status bar icon: the launcher capsule as a white silhouette (status icons are alpha-only). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <group
+        android:pivotX="12"
+        android:pivotY="12"
+        android:rotation="-45">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M8,7 L16,7 A5,5 0 0 1 16,17 L8,17 A5,5 0 0 1 8,7 Z" />
+    </group>
+</vector>
