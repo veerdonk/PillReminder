@@ -15,6 +15,7 @@ import nl.veerdonk.pillreminder.ui.MainActivity
 import nl.veerdonk.pillreminder.ui.alarm.AlarmActivity
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -139,6 +140,21 @@ class AndroidNotifierTest {
             "Snoozed until 09:20\nTap a button below once you've decided.",
             n.extras.getCharSequence(Notification.EXTRA_BIG_TEXT).toString(),
         )
+    }
+
+    @Test
+    fun `a reminder after a ring is posted silently, a fresh one alerts`() {
+        notifier.showReminder(reminder(dose = 1))
+        assertEquals(Notification.GROUP_ALERT_ALL, posted().groupAlertBehavior)
+        assertEquals(null, posted().sound)
+
+        notifier.showReminder(reminder(dose = 1, subtitle = ReminderSubtitle.Snoozed(Instant.parse("2026-10-13T07:20:00Z"))))
+        assertEquals(Notification.GROUP_ALERT_SUMMARY, posted().groupAlertBehavior)
+    }
+
+    @Test
+    fun `the alarm has its own notification ID`() {
+        assertNotEquals(AndroidNotifier.NOTIFICATION_ID, AndroidNotifier.ALARM_NOTIFICATION_ID)
     }
 
     @Test

@@ -260,8 +260,13 @@ so to change them, bump the channel ID.
 | `reminders_v1` | Pill reminders | HIGH | default notification sound | yes | Reminder notification |
 | `alarm_v1` | Pill alarm | HIGH | **none** (service plays sound) | **off** (service vibrates) | Alarm foreground notification with full-screen intent |
 
-**One notification ID (`1001`)** is used for both reminder and alarm, so only one pill
-notification is ever visible.
+**Two notification IDs:** `1001` for the reminder and `1002` for the alarm (the ring service's
+foreground notification). They must differ: when a foreground service stops, the system removes
+its notification by ID, asynchronously, so a reminder posted on the same ID right after
+`ensureStopped()` could be removed again (01 A26). The controller keeps only one visible: it
+cancels the reminder while ringing, and the alarm notification goes away when the service stops.
+The reminder that follows a ring (subtitle `Snoozed` or `AlarmStopped`) is posted with
+`setSilent(true)`, so the alarm isn't followed by a second buzz; a fresh REMINDER alerts normally.
 
 **Reminder notification:**
 - `setOngoing(true)`, `setOnlyAlertOnce(true)` (so re-posting an identical one doesn't re-buzz),
@@ -295,7 +300,7 @@ type isn't enforced at runtime, but `targetSdk ≥ 34` requires it in the manife
   If the service is already ringing for the same `dayId`/`dose`, it does nothing. If that same
   spec's `canSnooze` changed, it only updates the notification.
 - **On start:**
-  1. `startForeground(1001, notifier.buildAlarmNotification(spec))`.
+  1. `startForeground(1002, notifier.buildAlarmNotification(spec))`.
   2. Decide whether to play sound (FR-3.3):
      - `quiet = audioManager.ringerMode == RINGER_MODE_SILENT ||
        notificationManager.currentInterruptionFilter != INTERRUPTION_FILTER_ALL`
@@ -321,10 +326,10 @@ type isn't enforced at runtime, but `targetSdk ≥ 34` requires it in the manife
   `stopForeground(STOP_FOREGROUND_REMOVE)` and `stopSelf()`. The controller's `apply` then
   re-posts the reminder-style notification if the outputs require one.
 - **Order inside `apply(outputs)`:**
-  1. If `ringing == null`, call `ringController.ensureStopped()`.
-  2. Show or cancel the reminder. **Skip this step while ringing**, because the service owns ID 1001.
-  3. If `ringing != null`, call `ringController.ensureRinging`.
-  4. Schedule `nextWakeAt`.
+  1. If `ringing == null`: call `ringController.ensureStopped()`, then show or cancel the reminder.
+  2. If `ringing != null`: cancel the reminder (ID 1001), then call `ringController.ensureRinging`.
+     The service's alarm notification has its own ID (1002), see §7.
+  3. Schedule `nextWakeAt`.
 - **"Test alarm"** (Settings) starts the service with a test flag. It rings for 10 s, doesn't touch
   the state, and the AlarmActivity buttons just close it. The Settings screen calls it through
   `AppContainer.testAlarm`, a `TestAlarm` with `startTestAlarm()` and `stopTestAlarm()`

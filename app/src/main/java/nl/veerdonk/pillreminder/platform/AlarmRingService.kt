@@ -60,7 +60,7 @@ class AlarmRingService : Service() {
             Log.e(TAG, "Started without a ring spec")
             ServiceCompat.startForeground(
                 this,
-                AndroidNotifier.NOTIFICATION_ID,
+                AndroidNotifier.ALARM_NOTIFICATION_ID,
                 notificationFor(ActiveRing.test()),
                 FOREGROUND_TYPE_SYSTEM_EXEMPTED,
             )
@@ -72,7 +72,7 @@ class AlarmRingService : Service() {
         // each startForegroundService call. Re-posting an equal notification doesn't re-alert.
         ServiceCompat.startForeground(
             this,
-            AndroidNotifier.NOTIFICATION_ID,
+            AndroidNotifier.ALARM_NOTIFICATION_ID,
             notificationFor(requested),
             FOREGROUND_TYPE_SYSTEM_EXEMPTED,
         )

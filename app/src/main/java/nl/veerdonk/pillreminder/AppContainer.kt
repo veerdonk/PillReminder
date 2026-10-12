@@ -9,6 +9,7 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import nl.veerdonk.pillreminder.controller.ReminderController
@@ -22,9 +23,12 @@ import nl.veerdonk.pillreminder.data.history.RoomHistoryRepository
 import nl.veerdonk.pillreminder.platform.AlarmScheduler
 import nl.veerdonk.pillreminder.platform.AndroidAlarmScheduler
 import nl.veerdonk.pillreminder.platform.AndroidNotifier
+import nl.veerdonk.pillreminder.platform.AndroidPermissionChecker
 import nl.veerdonk.pillreminder.platform.AndroidRingController
-import nl.veerdonk.pillreminder.platform.NoOpWakeDetector
+import nl.veerdonk.pillreminder.platform.AndroidWakeDetector
+import nl.veerdonk.pillreminder.platform.DetectionLogEntry
 import nl.veerdonk.pillreminder.platform.Notifier
+import nl.veerdonk.pillreminder.platform.PermissionChecker
 import nl.veerdonk.pillreminder.platform.RingController
 import nl.veerdonk.pillreminder.platform.TestAlarm
 import nl.veerdonk.pillreminder.platform.WakeDetector
@@ -36,7 +40,7 @@ import java.time.ZoneId
  * a process-wide singleton: in particular there must be exactly one DataStore per file, since a
  * second one on the same file throws at runtime.
  *
- * The wake detector is a no-op until T9 replaces it.
+ * The wake detector and ring controller are the real Android implementations (T9, T8).
  */
 class AppContainer(appContext: Context) {
 
@@ -77,6 +81,8 @@ class AppContainer(appContext: Context) {
 
     val notifier: Notifier = AndroidNotifier(appContext)
 
+    val permissionChecker: PermissionChecker = AndroidPermissionChecker(appContext)
+
     private val androidRingController = AndroidRingController(appContext)
 
     val ringController: RingController = androidRingController
@@ -84,7 +90,12 @@ class AppContainer(appContext: Context) {
     /** The Settings screen's "Test alarm" button calls `testAlarm.startTestAlarm()` (design §8). */
     val testAlarm: TestAlarm = androidRingController
 
-    val wakeDetector: WakeDetector = NoOpWakeDetector // T9
+    private val androidWakeDetector = AndroidWakeDetector(appContext)
+
+    val wakeDetector: WakeDetector = androidWakeDetector
+
+    /** The last wake check, for the debug "Detection log" in Settings → Advanced (T10). */
+    val detectionLog: StateFlow<DetectionLogEntry?> = androidWakeDetector.lastCheck
 
     val reminderController = ReminderController(
         clock = clock,

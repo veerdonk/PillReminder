@@ -10,8 +10,3 @@ import java.time.Instant
 interface WakeDetector {
     suspend fun isAwake(from: Instant, to: Instant, settings: Settings): Boolean
 }
-
-/** Placeholder until T9 wires `AndroidWakeDetector`: never detects a wake-up, so only the fallback fires. */
-object NoOpWakeDetector : WakeDetector {
-    override suspend fun isAwake(from: Instant, to: Instant, settings: Settings): Boolean = false
-}
