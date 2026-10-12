@@ -21,7 +21,7 @@ Wave 5:  T12 integration hardening + manual test pass
 | T2 | Core model, settings, TimeMath | T1 | [x] |
 | T3 | Engine (reducer + outputs) | T2 | [x] |
 | T4 | WakeRule | T2 | [x] |
-| T5 | Data layer (settings, state, history) | T2 | [ ] |
+| T5 | Data layer (settings, state, history) | T2 | [x] |
 | T6 | Scheduler, receivers, ReminderController | T3, T5 | [ ] |
 | T7 | Notifications + ActionReceiver | T2 | [ ] |
 | T8 | Alarm ring service + AlarmActivity | T7 | [ ] |
@@ -112,6 +112,11 @@ shared `Json` instance for persisting core types. See assumptions A6 and A7 in 0
 **Accept when:**
 - Unit/Robolectric (or instrumented) tests show the settings round-trip, a state round-trip,
   that a corrupt state file yields `null`, and that history upsert replaces dose rows for the day.
+
+*Done 2026-10-12. Implementations are `DataStoreSettingsRepository`, `DataStoreStateStore` and
+`RoomHistoryRepository`, all wired in `AppContainer`. `DayWithDoses` is defined in design §4.
+Settings that fail `validate()` on read fall back to defaults (A12 in 01). Tests are in
+`app/src/test/.../data/` (DataStore on the plain JVM, Room under Robolectric).*
 
 ## T6 — Scheduling, receivers, ReminderController
 **Do:**

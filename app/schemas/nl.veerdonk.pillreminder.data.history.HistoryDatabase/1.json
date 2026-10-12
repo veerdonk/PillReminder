@@ -1,0 +1,105 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "97b42fc09e665f8902aec82ab28a4ad3",
+    "entities": [
+      {
+        "tableName": "day_log",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`day_id` TEXT NOT NULL, `wake_at` INTEGER, `wake_source` TEXT, `final_phase` TEXT NOT NULL, `updated_at` INTEGER NOT NULL, PRIMARY KEY(`day_id`))",
+        "fields": [
+          {
+            "fieldPath": "dayId",
+            "columnName": "day_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wakeAt",
+            "columnName": "wake_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "wakeSource",
+            "columnName": "wake_source",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "finalPhase",
+            "columnName": "final_phase",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "day_id"
+          ]
+        }
+      },
+      {
+        "tableName": "dose_log",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`day_id` TEXT NOT NULL, `dose_index` INTEGER NOT NULL, `status` TEXT NOT NULL, `taken_at` INTEGER, `source` TEXT, `snoozes_used` INTEGER NOT NULL, `first_reminded_at` INTEGER, PRIMARY KEY(`day_id`, `dose_index`))",
+        "fields": [
+          {
+            "fieldPath": "dayId",
+            "columnName": "day_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "doseIndex",
+            "columnName": "dose_index",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "takenAt",
+            "columnName": "taken_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "snoozesUsed",
+            "columnName": "snoozes_used",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "firstRemindedAt",
+            "columnName": "first_reminded_at",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "day_id",
+            "dose_index"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '97b42fc09e665f8902aec82ab28a4ad3')"
+    ]
+  }
+}
