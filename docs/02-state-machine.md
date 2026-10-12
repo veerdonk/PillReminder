@@ -211,7 +211,9 @@ data class Outputs(
     val nextWakeAt: Instant,       // exact alarm to schedule
     val status: StatusSpec? = null, // FR-2.4 status notification, only with S.showStatusNotification
 )
-data class ReminderSpec(val dayId: LocalDate, val dose: Int, val doseCount: Int, val alarmStyle: Boolean, val canSnooze: Boolean, val snoozesLeft: Int, val subtitle: ReminderSubtitle?)
+data class ReminderSpec(val dayId: LocalDate, val dose: Int, val doseCount: Int, val alarmStyle: Boolean, val canSnooze: Boolean, val snoozesLeft: Int, val subtitle: ReminderSubtitle?,
+                        val lowStock: LowStock? = null)   // always null from outputs(); the orchestrator fills it (01 FR-10.3)
+data class LowStock(val pillsLeft: Int, val daysLeft: Int)
 sealed interface ReminderSubtitle {                 // worded by :app from strings.xml (A9)
     data class Snoozed(val until: Instant) : ReminderSubtitle   // "Snoozed until HH:MM", device zone
     data object AlarmStopped : ReminderSubtitle                  // "Alarm stopped — please take your pill"
@@ -261,7 +263,9 @@ handle(event, expectedDayId = null):
         t.finishedDay?.let { history.upsert(it) }
         stateStore.save(t.state)
         history.upsert(t.state)            // keep today's history row live
-        apply(outputs(t.state, settings, now))   // notifications, ring service, AlarmManager
+        pillStock.take(PillStock.pillsTaken(state, t.state))   // 01 FR-10.2
+        lowStock = PillStock.lowStock(pillStock.current(), settings.dosesPerDay)
+        apply(outputs(t.state, settings, now) with reminder.lowStock = lowStock)   // notifications, ring service, AlarmManager
     }
 ```
 

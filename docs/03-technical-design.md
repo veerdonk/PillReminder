@@ -27,7 +27,8 @@ without the Android SDK.
 ```
 :core   (kotlin("jvm") — NO Android dependencies)
   nl.veerdonk.pillreminder.core
-    model/       Settings, DayState, DoseRecord, enums, Event, Transition, Outputs, ReminderSpec, ReminderSubtitle, RingSpec
+    model/       Settings, DayState, DoseRecord, enums, Event, Transition, Outputs, ReminderSpec, ReminderSubtitle, RingSpec,
+                 PillStock + LowStock (pill supply rules, 01 FR-10)
     time/        TimeMath: dayIdOf, startOfDay, earliestAt, fallbackAt, nextRolloverAt, isWeekend
     engine/      Engine.reduce(), Engine.outputs()           (02-state-machine.md)
     wake/        UsageEvt, WakeRule.isAwake()                 (§6)
@@ -43,6 +44,7 @@ without the Android SDK.
     data/
       SettingsRepository.kt     DataStore <-> core Settings, Flow<Settings>
       StateStore.kt             DataStore JSON <-> DayState, Flow<DayState?>
+      PillStockRepository.kt    DataStore (`pill_stock`) <-> pills on hand, Flow<Int?> (01 FR-10)
       history/                  Room: HistoryDatabase, DayLogEntity, DoseLogEntity, HistoryDao, HistoryRepository
     platform/
       AlarmScheduler.kt         AlarmManager wrapper (§5)
@@ -173,6 +175,8 @@ interface Notifier {
 interface RingController { fun ensureRinging(spec: RingSpec); fun ensureStopped() }
 interface StateStore { val state: Flow<DayState?>; suspend fun load(): DayState?; suspend fun save(s: DayState) }
 interface SettingsRepository { val settings: Flow<Settings>; suspend fun current(): Settings; suspend fun update(s: Settings) }
+interface PillStockRepository { val pillsLeft: Flow<Int?>; suspend fun current(): Int?
+                                suspend fun set(count: Int?); suspend fun take(count: Int) }   // null = not counting; take() floors at 0
 interface HistoryRepository { fun days(): Flow<List<DayWithDoses>>; suspend fun upsert(day: DayState) }
 // days() is newest first. DayWithDoses (data/history) is a day_log row plus its dose_log rows
 // as core DoseRecords, ordered by index. Instants have millisecond precision.
@@ -302,6 +306,8 @@ The reminder that follows a ring (subtitle `Snoozed` or `AlarmStopped`) is poste
 - Title "Time for pill N of M", text "Tap a button below once you've decided." with the optional
   subtitle from `ReminderSpec`. `ReminderSubtitle` is typed (A9): word it from `strings.xml`, and
   format `Snoozed.until` as HH:MM in the device's current zone.
+- With `ReminderSpec.lowStock` set (01 FR-10.3, A60), the text is "Running low: N pills left,
+  enough for D days"; the expanded text is the subtitle (if any), that line, then the usual text.
 - Actions:
   - "I took my pill" → `ActionReceiver` (`ACTION_TOOK`)
   - "Not today" (dose 1) / "I'm done for today" (later doses) → `ActionReceiver` (`ACTION_SKIP`)

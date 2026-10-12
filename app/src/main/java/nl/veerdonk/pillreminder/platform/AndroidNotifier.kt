@@ -15,6 +15,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import nl.veerdonk.pillreminder.R
 import nl.veerdonk.pillreminder.core.model.DoseSource
+import nl.veerdonk.pillreminder.core.model.LowStock
 import nl.veerdonk.pillreminder.core.model.ReminderSpec
 import nl.veerdonk.pillreminder.core.model.ReminderSubtitle
 import nl.veerdonk.pillreminder.core.model.RingSpec
@@ -92,15 +93,18 @@ class AndroidNotifier(
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setContentIntent(activityIntent(REQUEST_CONTENT, MainActivity::class.java, spec.dayId, spec.dose))
         addDecisionActions(builder, spec.dayId, spec.dose, DoseSource.NOTIFICATION)
-        spec.subtitle?.let { subtitle ->
-            val line = subtitleText(subtitle)
+        val subtitle = spec.subtitle?.let(::subtitleText)
+        if (subtitle != null) {
             // A subtitle only exists right after a ring (SNOOZED, PENDING_SILENT): the alarm just
             // alerted, so this re-post stays silent (01 A26). HELD_DRIVING stays silent too:
             // the reminder was already shown, and the user is driving (FR-3.8).
-            builder.setSilent(true)
-                .setSubText(line)
-                .setStyle(NotificationCompat.BigTextStyle().bigText("$line\n${context.getString(R.string.notification_text)}"))
+            builder.setSilent(true).setSubText(subtitle)
         }
+        // "Running low" replaces the collapsed text, so it shows without expanding (FR-10.3).
+        val lowStock = spec.lowStock?.let(::lowStockText)
+        if (lowStock != null) builder.setContentText(lowStock)
+        val lines = listOfNotNull(subtitle, lowStock, context.getString(R.string.notification_text))
+        if (lines.size > 1) builder.setStyle(NotificationCompat.BigTextStyle().bigText(lines.joinToString("\n")))
         post(NOTIFICATION_ID, builder.build())
     }
 
@@ -189,6 +193,15 @@ class AndroidNotifier(
     }
 
     private fun formatTime(instant: Instant): String = TIME_FORMAT.format(instant.atZone(zone()))
+
+    private fun lowStockText(lowStock: LowStock): String {
+        val res = context.resources
+        return context.getString(
+            R.string.notification_low_stock,
+            res.getQuantityString(R.plurals.pills_left, lowStock.pillsLeft, lowStock.pillsLeft),
+            res.getQuantityString(R.plurals.pills_days, lowStock.daysLeft, lowStock.daysLeft),
+        )
+    }
 
     private fun post(id: Int, notification: Notification) {
         // Without the permission the system would drop the notification anyway; don't call it.

@@ -25,6 +25,10 @@ class HomeViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
+    /** Pills on hand, or null when not tracked (FR-10). */
+    val pillsLeft: StateFlow<Int?> = container.pillStock.pillsLeft
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), null)
+
     val model: StateFlow<HomeModel?> = combine(
         container.stateStore.state,
         container.settingsRepository.settings,
@@ -59,6 +63,17 @@ class HomeViewModel(private val container: AppContainer) : ViewModel() {
     fun remindNow() = send(Event.RemindNow)
 
     fun resumeDay() = send(Event.ResumeDay)
+
+    /**
+     * Sets the pill count, or stops counting with null, then ticks so a showing reminder gains
+     * or loses its "running low" line (FR-10.3).
+     */
+    fun setPillsLeft(count: Int?) {
+        container.appScope.launch {
+            container.pillStock.set(count)
+            container.reminderController.tick()
+        }
+    }
 
     private companion object {
         const val REFRESH_MILLIS = 15_000L

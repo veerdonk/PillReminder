@@ -8,6 +8,8 @@ import nl.veerdonk.pillreminder.core.model.ReminderSpec
 import nl.veerdonk.pillreminder.core.model.RingSpec
 import nl.veerdonk.pillreminder.core.model.StatusSpec
 import nl.veerdonk.pillreminder.core.model.Settings
+import nl.veerdonk.pillreminder.core.model.PillStock
+import nl.veerdonk.pillreminder.data.PillStockRepository
 import nl.veerdonk.pillreminder.data.SettingsRepository
 import nl.veerdonk.pillreminder.data.StateStore
 import nl.veerdonk.pillreminder.data.history.DayWithDoses
@@ -146,5 +148,18 @@ class FakeAlarmScheduler(private val log: CallLog) : AlarmScheduler {
 
     override fun cancel() {
         log.calls += Call.Cancel
+    }
+}
+
+class FakePillStock(initial: Int? = null) : PillStockRepository {
+    private val flow = MutableStateFlow(initial)
+    override val pillsLeft: Flow<Int?> = flow
+    override suspend fun current(): Int? = flow.value
+    override suspend fun set(count: Int?) {
+        flow.value = count
+    }
+
+    override suspend fun take(count: Int) {
+        flow.value = flow.value?.let { PillStock.afterTaking(it, count) }
     }
 }

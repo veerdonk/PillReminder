@@ -197,6 +197,17 @@ alarms are recomputed where the spec defines them in terms of the setting (see s
 - **FR-9.3** The app must not run a permanent foreground service. It uses scheduled alarms only,
   plus a short-lived foreground service while the alarm is ringing.
 
+### FR-10 Pill supply
+- **FR-10.1** Home has a **Pill supply** card where I enter how many pills I have now (for
+  example 90 after picking up a new batch). It can be changed at any time, or switched off with
+  "Stop counting". While it's off, nothing is counted and nothing warns.
+- **FR-10.2** Every dose recorded as taken counts the supply down by 1, whichever way it was
+  recorded (notification, alarm, Home, backdated). Skipped and missed doses don't. The count
+  never goes below 0.
+- **FR-10.3** When fewer than **5 days** of pills are left (pills < 5 × `dosesPerDay`), the
+  reminder notification says "Running low: N pills left, enough for D days", and Home shows a
+  warning on the Pill supply card. D is whole days, rounded down.
+
 ## 4. Non-functional requirements
 
 - **NFR-1** Kotlin, Jetpack Compose, Material 3. minSdk 33, targetSdk is the latest stable.
@@ -227,6 +238,7 @@ alarms are recomputed where the spec defines them in terms of the setting (see s
 | D12 | History, home status | Yes |
 | D13 | Language | English |
 | D15 | Silent / DND | Light and vibration, no sound (A1, A2) |
+| D16 | Pill supply | Count down per dose taken; warn on the reminder below 5 days of pills (FR-10) |
 | D14 | Stack | Kotlin, Compose, AlarmManager, DataStore, Room, GitHub Actions APK build |
 
 ## 6. Open points / assumptions
@@ -410,3 +422,11 @@ Open:
   negative until the reminder replaces it, which is seconds. Before dose 1 there is no countdown
   because the reminder can come any time once you're detected awake; the fallback time is shown
   instead. The engine computes it (`Outputs.status`), so it is unit tested with the rest.
+- **A60** (owner request) Pill supply (FR-10). The count spans days, so it isn't part of
+  `DayState`: it is kept in its own small DataStore file (`pill_stock`) and survives a corrupt
+  day state. The controller counts the TAKEN records a reduce added (`PillStock.pillsTaken`), so
+  a stale or repeated tap takes nothing and a rollover takes nothing. There is no "undo" for a
+  dose taken by mistake; correct the number on Home instead. The 5-day threshold is fixed
+  (`PillStock.LOW_STOCK_DAYS`), not a setting. The warning is on the reminder notification
+  only; the alarm notification and alarm screen are unchanged. In the collapsed reminder the
+  warning replaces "Tap a button below once you've decided."; expanded, both lines show.
