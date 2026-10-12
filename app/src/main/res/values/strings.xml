@@ -19,4 +19,52 @@
         <item quantity="one">Snooze (%1$d left)</item>
         <item quantity="other">Snooze (%1$d left)</item>
     </plurals>
+
+    <!-- Setup checklist (FR-9.1, design §9-10) -->
+    <string name="setup_title">Setup</string>
+    <string name="setup_intro">Reminders only work reliably when these are set. Items marked Required must be on.</string>
+    <string name="setup_required">Required</string>
+    <string name="setup_recommended">Recommended</string>
+    <string name="setup_status_ok">Done</string>
+    <string name="setup_status_missing">Not set</string>
+    <string name="setup_button_grant">Fix</string>
+    <string name="setup_button_steps">Show steps</string>
+    <string name="setup_continue">Continue</string>
+    <string name="setup_navigate_back">Back</string>
+    <string name="setup_item_notifications_title">Notifications</string>
+    <string name="setup_item_notifications_desc">Needed to show the reminder. Both the \"Pill reminders\" and \"Pill alarm\" channels must be on.</string>
+    <string name="setup_item_exact_alarms_title">Alarms and reminders</string>
+    <string name="setup_item_exact_alarms_desc">Lets the app fire at the exact time.</string>
+    <string name="setup_item_usage_access_title">Usage access</string>
+    <string name="setup_item_usage_access_desc">Lets the app see when you pick up your phone. Without it, only the fallback time triggers dose 1.</string>
+    <string name="setup_item_full_screen_title">Full-screen alarm</string>
+    <string name="setup_item_full_screen_desc">Lets the alarm turn the screen on over the lock screen.</string>
+    <string name="setup_item_battery_title">Battery optimisation</string>
+    <string name="setup_item_battery_desc">Set to \"Don\'t optimise\" so the system doesn\'t stop the app in the background.</string>
+    <string name="setup_item_oneplus_title">OnePlus extras</string>
+    <string name="setup_item_oneplus_desc">Auto-launch, lock in Recents and sleep standby. These can\'t be detected, so you tick them off yourself.</string>
+
+    <!-- OnePlus guide (docs/06-device-setup-oneplus.md) -->
+    <string name="oneplus_title">OnePlus setup</string>
+    <string name="oneplus_intro">OxygenOS kills background apps aggressively, and if it kills this app the reminders won\'t fire. Do these steps once after installing. Menu names vary slightly between OxygenOS builds; if a path doesn\'t match, use the search box in Settings.</string>
+    <string name="oneplus_step_autolaunch_title">Auto-launch</string>
+    <string name="oneplus_step_autolaunch">Settings → Apps → Auto launch (or App management → PillReminder → Auto launch) → on. This lets the app start after a reboot.</string>
+    <string name="oneplus_step_lock_title">Lock the app in Recents</string>
+    <string name="oneplus_step_lock">Open Recents, tap the ⋮ menu (or long-press) on PillReminder → Lock. This stops \"clear all\" from killing it.</string>
+    <string name="oneplus_step_sleep_title">Sleep standby optimisation</string>
+    <string name="oneplus_step_sleep">Turn it off if present: Battery → More settings → Sleep standby optimisation → off. Also turn off any \"Deep optimisation\" or \"Advanced optimisation\" for the app.</string>
+    <string name="oneplus_step_dnd_title">Do Not Disturb</string>
+    <string name="oneplus_step_dnd">If the alarm doesn\'t vibrate or show while Do Not Disturb is on, go to Settings → Sound &amp; vibration → Do Not Disturb and allow Alarms, or add PillReminder under Apps exceptions.</string>
+    <string name="oneplus_verify">Verify: run Settings → Test alarm. Then lock the phone and wait for a 1-minute test escalation. The screen should turn on with the alarm.</string>
+    <string name="oneplus_after_update">After an OxygenOS update, re-check these steps and the battery setting, because updates sometimes reset them.</string>
+    <string name="oneplus_open_app_settings">Open app settings</string>
+    <string name="oneplus_done_checkbox">I\'ve done this</string>
+
+    <!-- Home warning banner (FR-6.3) -->
+    <plurals name="banner_message">
+        <item quantity="one">%1$d setup item needs attention.</item>
+        <item quantity="other">%1$d setup items need attention.</item>
+    </plurals>
+    <string name="banner_message_required">Reminders may not work: a required permission is missing.</string>
+    <string name="banner_open_setup">Open setup</string>
 </resources>

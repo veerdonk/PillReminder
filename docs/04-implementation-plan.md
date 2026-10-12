@@ -27,7 +27,7 @@ Wave 5:  T12 integration hardening + manual test pass
 | T8 | Alarm ring service + AlarmActivity | T7 | [ ] |
 | T9 | UsageEventSource + AndroidWakeDetector | T4 | [x] |
 | T10 | Main UI: Home, Record dose, History, Settings | T5, T6 | [ ] |
-| T11 | Setup checklist + PermissionChecker | T1 | [ ] |
+| T11 | Setup checklist + PermissionChecker | T1 | [x] |
 | T12 | Integration, hardening, manual test pass | all | [ ] |
 
 T6 integrates T7, T8 and T9 through their interfaces. If one of those isn't done yet,
@@ -219,6 +219,15 @@ actions through `ReminderController`.
 **Accept when:**
 - Each row shows live status (re-checked on resume) and its button opens the right system screen.
 - The setup screen shows on first launch and when a hard requirement is missing.
+
+*Done 2026-10-12. `PermissionChecker`/`AndroidPermissionChecker` (platform/PermissionChecker.kt)
+do the checks and fix intents; the pure rules (missing items, hard vs soft, setup-needed, banner)
+are in `SetupStatus` (platform/SetupStatus.kt). `SetupScreen`, `OnePlusGuideScreen` and the reusable
+`PermissionBanner(status, onOpenSetup)` plus `rememberSetupStatus(checker)` live in `ui/setup/`.
+T10 adds the banner at the top of Home and keeps the "setup"/"oneplus_guide" routes that
+MainActivity now defines with a minimal NavHost (`Routes`). Adds navigation-compose and the
+PACKAGE_USAGE_STATS and REQUEST_IGNORE_BATTERY_OPTIMIZATIONS permissions. Assumptions A40-A43 in 01.
+The on-device checks above are still open for the owner.*
 
 ## T12 — Integration, hardening, manual test pass
 **Do:**

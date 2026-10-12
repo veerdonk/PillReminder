@@ -23,10 +23,12 @@ import nl.veerdonk.pillreminder.data.history.RoomHistoryRepository
 import nl.veerdonk.pillreminder.platform.AlarmScheduler
 import nl.veerdonk.pillreminder.platform.AndroidAlarmScheduler
 import nl.veerdonk.pillreminder.platform.AndroidNotifier
+import nl.veerdonk.pillreminder.platform.AndroidPermissionChecker
 import nl.veerdonk.pillreminder.platform.AndroidWakeDetector
 import nl.veerdonk.pillreminder.platform.DetectionLogEntry
 import nl.veerdonk.pillreminder.platform.NoOpRingController
 import nl.veerdonk.pillreminder.platform.Notifier
+import nl.veerdonk.pillreminder.platform.PermissionChecker
 import nl.veerdonk.pillreminder.platform.RingController
 import nl.veerdonk.pillreminder.platform.WakeDetector
 import java.time.Clock
@@ -77,6 +79,8 @@ class AppContainer(appContext: Context) {
     val alarmScheduler: AlarmScheduler = AndroidAlarmScheduler(appContext)
 
     val notifier: Notifier = AndroidNotifier(appContext)
+
+    val permissionChecker: PermissionChecker = AndroidPermissionChecker(appContext)
 
     val ringController: RingController = NoOpRingController // T8
 
