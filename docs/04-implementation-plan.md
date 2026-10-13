@@ -32,6 +32,7 @@ Wave 5:  T12 integration hardening + manual test pass
 | T13 | Hold the alarm while Maps navigates (FR-3.8) | T3, T6, T11 | [x] |
 | T14 | Optional status notification with countdown (FR-2.4) | T3, T6, T7, T10 | [x] |
 | T15 | Pill supply count and low warning (FR-10) | T6, T7, T10 | [x] |
+| T16 | Call pharmacy button (FR-10.4) | T10, T15 | [x] |
 
 T6 integrates T7, T8 and T9 through their interfaces. If one of those isn't done yet,
 T6 uses a no-op/fake implementation and the owning task wires the real one into `AppContainer`.
@@ -304,3 +305,13 @@ passes on the phone.
 - On the phone: M27 in `05-test-plan.md` passes.
 
 *Done 2026-10-12 (owner request). Assumption A60 in 01. M27 is open for the owner.*
+
+## T16 — Call pharmacy button
+**Do:**
+- `Settings.pharmacyPhone` (default none), stored and editable in Settings → Pharmacy.
+- A "Call pharmacy" button on the Pill supply card that opens the dialer with the number.
+
+**Accept when:** unit tests cover the validation, the form and the stored key; M28 passes on the
+phone.
+
+*Done 2026-10-13 (owner request). Assumption A62 in 01. M28 is open for the owner.*

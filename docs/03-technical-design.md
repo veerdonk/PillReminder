@@ -99,6 +99,7 @@ data class Settings(
     val dayRolloverTime: LocalTime = LocalTime.of(3, 0),
     val alarmSoundUri: String? = null,          // null = system default alarm
     val showStatusNotification: Boolean = false, // FR-2.4
+    val pharmacyPhone: String? = null,           // FR-10.4, null = no "Call pharmacy" button
 ) {
     fun validate(): List<String>                 // human-readable errors; empty = valid (ranges in 01 §FR-8)
 }

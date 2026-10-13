@@ -3,6 +3,7 @@ package nl.veerdonk.pillreminder.data
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
@@ -54,6 +55,7 @@ class SettingsRepositoryTest {
         dayRolloverTime = LocalTime.MIDNIGHT,
         alarmSoundUri = "content://media/internal/audio/media/42",
         showStatusNotification = true,
+        pharmacyPhone = "+31 20 123 4567",
     )
 
     @Test
@@ -165,5 +167,17 @@ class SettingsRepositoryTest {
         assertEquals(Settings(), repo.current())
         repo.update(allChanged)
         assertEquals(allChanged, repo.current())
+    }
+
+    @Test
+    fun missingPharmacyPhoneKeyReadsAsNone() = runTest {
+        val store = newDataStore()
+        val repo = DataStoreSettingsRepository(store)
+        repo.update(allChanged)
+        store.edit { it.remove(stringPreferencesKey("pharmacy_phone")) }
+        assertEquals(allChanged.copy(pharmacyPhone = null), repo.current())
+        // Clearing the number removes the key again.
+        repo.update(allChanged.copy(pharmacyPhone = null))
+        assertEquals(null, repo.current().pharmacyPhone)
     }
 }

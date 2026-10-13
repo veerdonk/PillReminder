@@ -174,6 +174,7 @@ alarms are recomputed where the spec defines them in terms of the setting (see s
 | `dayRolloverTime` | 03:00 | 00:00–06:00 and < both earliest times | Advanced setting |
 | `alarmSound` | System default alarm | Ringtone picker | Nice-to-have |
 | `showStatusNotification` | off | on/off | FR-2.4 |
+| `pharmacyPhone` | empty | Up to 30 digits, spaces and `+ - ( )` | FR-10.4. Empty = no button |
 
 - The minimum values of 1 minute are deliberate. They let me test the full flow quickly on the
   phone.
@@ -208,6 +209,9 @@ alarms are recomputed where the spec defines them in terms of the setting (see s
 - **FR-10.3** When fewer than **5 days** of pills are left (pills < 5 × `dosesPerDay`), the
   reminder notification says "Running low: N pills left, enough for D days", and Home shows a
   warning on the Pill supply card. D is whole days, rounded down.
+- **FR-10.4** Settings → Pharmacy holds my pharmacy's phone number. When it is set, the Pill
+  supply card has a **"Call pharmacy"** button that opens the phone app with the number filled
+  in; I tap Call myself. Without a number there is no button.
 
 ## 4. Non-functional requirements
 
@@ -436,3 +440,9 @@ Open:
   and dark, instead of colours taken from the wallpaper. This keeps the status colours (taken,
   pending, missed) recognisable. Layout and wording changes only; no behaviour changed. Home
   hides the "Record dose" card when no action is valid (it used to show an empty card).
+- **A62** (owner request) Call pharmacy (FR-10.4). The button opens the dialer
+  (`Intent.ACTION_DIAL`), so the app needs no call permission and never places a call itself.
+  It sits on the Pill supply card as an outlined button, tonal while the low-supply warning
+  shows. The number is stored as typed (trimmed); only its characters and length are checked,
+  not whether it is a real number. "Reset to defaults" keeps it, since it is contact data
+  rather than a tuning value.

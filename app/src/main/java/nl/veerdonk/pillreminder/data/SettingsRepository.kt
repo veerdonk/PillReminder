@@ -34,8 +34,8 @@ interface SettingsRepository {
 
 /**
  * [SettingsRepository] on a Preferences DataStore. Each field is its own key: durations as
- * whole minutes, times as minute-of-day, `alarmSoundUri` as a string. A missing key reads as
- * the default from `Settings()`; a missing `alarmSoundUri` reads as null.
+ * whole minutes, times as minute-of-day, `alarmSoundUri` and `pharmacyPhone` as strings. A
+ * missing key reads as the default from `Settings()`; a missing string key reads as null.
  *
  * If the stored values don't form valid settings (for example after a downgrade, or a value out
  * of range), the whole object falls back to `Settings()` defaults (assumption A12 in
@@ -84,6 +84,8 @@ class DataStoreSettingsRepository(
         p[Keys.SHOW_STATUS_NOTIFICATION] = s.showStatusNotification
         val uri = s.alarmSoundUri
         if (uri == null) p.remove(Keys.ALARM_SOUND_URI) else p[Keys.ALARM_SOUND_URI] = uri
+        val phone = s.pharmacyPhone
+        if (phone == null) p.remove(Keys.PHARMACY_PHONE) else p[Keys.PHARMACY_PHONE] = phone
     }
 
     private fun toSettings(p: Preferences): Settings {
@@ -108,6 +110,7 @@ class DataStoreSettingsRepository(
                 dayRolloverTime = p[Keys.DAY_ROLLOVER]?.toLocalTime() ?: d.dayRolloverTime,
                 alarmSoundUri = p[Keys.ALARM_SOUND_URI],
                 showStatusNotification = p[Keys.SHOW_STATUS_NOTIFICATION] ?: d.showStatusNotification,
+                pharmacyPhone = p[Keys.PHARMACY_PHONE],
             )
         } catch (_: DateTimeException) {
             return d // a minute-of-day outside 0..1439
@@ -136,6 +139,7 @@ class DataStoreSettingsRepository(
         val DAY_ROLLOVER = intPreferencesKey("day_rollover_time")
         val ALARM_SOUND_URI = stringPreferencesKey("alarm_sound_uri")
         val SHOW_STATUS_NOTIFICATION = booleanPreferencesKey("show_status_notification")
+        val PHARMACY_PHONE = stringPreferencesKey("pharmacy_phone")
     }
 
     companion object {

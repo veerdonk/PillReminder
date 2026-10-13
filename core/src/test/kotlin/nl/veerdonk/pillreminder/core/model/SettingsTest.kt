@@ -35,6 +35,7 @@ class SettingsTest {
         assertEquals(min(2), d.alarmRingDuration)
         assertEquals(LocalTime.of(3, 0), d.dayRolloverTime)
         assertEquals(null, d.alarmSoundUri)
+        assertEquals(null, d.pharmacyPhone)
         assertEquals(emptyList<String>(), d.validate())
     }
 
@@ -121,5 +122,20 @@ class SettingsTest {
     fun `multiple errors are all reported`() {
         val s = d.copy(minUnlocks = 0, dosesPerDay = 9, weekendFallbackTime = LocalTime.of(8, 0))
         assertEquals(3, s.validate().size)
+    }
+
+    @Test
+    fun `pharmacy phone accepts usual number formats`() {
+        listOf("0201234567", "+31 20 123 4567", "(020) 123-45-67", "112").forEach {
+            assertEquals(it, emptyList<String>(), d.copy(pharmacyPhone = it).validate())
+        }
+    }
+
+    @Test
+    fun `pharmacy phone rejects letters, no digits, padding and overlong numbers`() {
+        listOf("call me", "+-()", "", " 020", "0".repeat(31), "020#1").forEach {
+            assertSingleError(d.copy(pharmacyPhone = it), "pharmacyPhone")
+        }
+        assertEquals(emptyList<String>(), d.copy(pharmacyPhone = "0".repeat(30)).validate())
     }
 }

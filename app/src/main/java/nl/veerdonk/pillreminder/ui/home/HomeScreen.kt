@@ -1,5 +1,10 @@
 package nl.veerdonk.pillreminder.ui.home
 
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -40,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -71,6 +77,7 @@ fun HomeScreen(
 ) {
     val model by viewModel.model.collectAsState()
     val pillsLeft by viewModel.pillsLeft.collectAsState()
+    val context = LocalContext.current
     HomeContent(
         model = model,
         pillsLeft = pillsLeft,
@@ -85,8 +92,18 @@ fun HomeScreen(
             skip = viewModel::skip,
             resumeDay = viewModel::resumeDay,
             setPillsLeft = viewModel::setPillsLeft,
+            callPharmacy = { phone -> openDialer(context, phone) },
         ),
     )
+}
+
+/** Opens the phone app with [phone] filled in; the user still taps Call, so no permission is needed. */
+private fun openDialer(context: Context, phone: String) {
+    try {
+        context.startActivity(Intent(Intent.ACTION_DIAL, Uri.fromParts("tel", phone, null)))
+    } catch (_: ActivityNotFoundException) {
+        Toast.makeText(context, context.getString(R.string.pills_no_dialer, phone), Toast.LENGTH_LONG).show()
+    }
 }
 
 /** What the Home buttons do; [HomeScreen] wires them to [HomeViewModel]. */
@@ -97,6 +114,7 @@ internal class HomeCallbacks(
     val skip: () -> Unit,
     val resumeDay: () -> Unit,
     val setPillsLeft: (Int?) -> Unit,
+    val callPharmacy: (String) -> Unit,
 )
 
 /** The stateless Home screen, so it can be previewed. */
@@ -141,7 +159,7 @@ internal fun HomeContent(
                 NextActionCard(m, zone)
                 ActionsCard(m, callbacks)
                 TodayCard(m, zone)
-                PillSupplyCard(pillsLeft, m.settings.dosesPerDay, callbacks.setPillsLeft)
+                PillSupplyCard(pillsLeft, m.settings.dosesPerDay, m.settings.pharmacyPhone, callbacks)
             }
         }
     }
@@ -392,7 +410,7 @@ private fun backdateErrorText(error: BackdateResult.Invalid, zone: ZoneId): Stri
 
 /** Pills on hand, counted down per dose taken, with the low-supply warning (FR-10). */
 @Composable
-private fun PillSupplyCard(pillsLeft: Int?, dosesPerDay: Int, onSet: (Int?) -> Unit) {
+private fun PillSupplyCard(pillsLeft: Int?, dosesPerDay: Int, pharmacyPhone: String?, callbacks: HomeCallbacks) {
     var editing by remember { mutableStateOf(false) }
     val colors = MaterialTheme.colorScheme
     AppCard {
@@ -416,13 +434,27 @@ private fun PillSupplyCard(pillsLeft: Int?, dosesPerDay: Int, onSet: (Int?) -> U
                 }
             }
         }
-        if (pillsLeft != null && PillStock.lowStock(pillsLeft, dosesPerDay) != null) {
+        val low = pillsLeft != null && PillStock.lowStock(pillsLeft, dosesPerDay) != null
+        if (low) {
             Tag(
                 text = stringResource(R.string.pills_low),
                 containerColor = colors.errorContainer,
                 contentColor = colors.onErrorContainer,
                 icon = R.drawable.ic_priority,
             )
+        }
+        // Only with a number set in Settings → Pharmacy (FR-10.4); stands out once supply is low.
+        pharmacyPhone?.let { phone ->
+            val label: @Composable () -> Unit = {
+                Icon(painterResource(R.drawable.ic_call), contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.pills_call_pharmacy))
+            }
+            if (low) {
+                FilledTonalButton(onClick = { callbacks.callPharmacy(phone) }, modifier = SecondaryButton) { label() }
+            } else {
+                OutlinedButton(onClick = { callbacks.callPharmacy(phone) }, modifier = SecondaryButton) { label() }
+            }
         }
         TextButton(onClick = { editing = true }) {
             Icon(painterResource(R.drawable.ic_edit), contentDescription = null, modifier = Modifier.size(18.dp))
@@ -435,7 +467,7 @@ private fun PillSupplyCard(pillsLeft: Int?, dosesPerDay: Int, onSet: (Int?) -> U
             initial = pillsLeft,
             onSave = { count ->
                 editing = false
-                onSet(count)
+                callbacks.setPillsLeft(count)
             },
             onDismiss = { editing = false },
         )

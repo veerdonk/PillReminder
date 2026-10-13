@@ -38,9 +38,12 @@ class SettingsViewModel(private val container: AppContainer) : ViewModel() {
         container.appScope.launch { container.settingsRepository.update(settings) }
     }
 
-    /** "Reset to defaults" (after the user confirmed): saves `Settings()` at once. */
+    /**
+     * "Reset to defaults" (after the user confirmed): saves `Settings()` at once. The pharmacy
+     * number is contact data, not a tuning value, so it is kept (A62).
+     */
     fun resetToDefaults() {
-        val defaults = Settings()
+        val defaults = Settings(pharmacyPhone = saved?.pharmacyPhone)
         form = SettingsForm.from(defaults)
         saved = defaults
         container.appScope.launch { container.settingsRepository.update(defaults) }
