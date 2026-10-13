@@ -431,3 +431,8 @@ Open:
   (`PillStock.LOW_STOCK_DAYS`), not a setting. The warning is on the reminder notification
   only; the alarm notification and alarm screen are unchanged. In the collapsed reminder the
   warning replaces "Tap a button below once you've decided."; expanded, both lines show.
+- **A61** (owner request) Visual refresh. NFR-6 makes dynamic colour optional, so the app now
+  uses its own fixed palette (the launcher's teal, with its coral for "needs you now") in light
+  and dark, instead of colours taken from the wallpaper. This keeps the status colours (taken,
+  pending, missed) recognisable. Layout and wording changes only; no behaviour changed. Home
+  hides the "Record dose" card when no action is valid (it used to show an empty card).

@@ -7,17 +7,23 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -31,10 +37,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -51,6 +61,8 @@ import nl.veerdonk.pillreminder.core.model.RingSpec
 import nl.veerdonk.pillreminder.platform.ActiveRing
 import nl.veerdonk.pillreminder.platform.RingExtras
 import nl.veerdonk.pillreminder.platform.RingState
+import nl.veerdonk.pillreminder.ui.common.IconBadge
+import nl.veerdonk.pillreminder.ui.common.Tag
 import nl.veerdonk.pillreminder.ui.theme.PillReminderTheme
 import java.time.Clock
 import java.time.LocalDate
@@ -187,7 +199,7 @@ internal fun testSpec(dosesPerDay: Int, maxSnoozes: Int): RingSpec =
     )
 
 @Composable
-private fun AlarmScreen(
+internal fun AlarmScreen(
     spec: RingSpec,
     test: Boolean,
     clock: Clock,
@@ -202,7 +214,8 @@ private fun AlarmScreen(
             delay(CLOCK_REFRESH_MS)
         }
     }
-    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+    val colors = MaterialTheme.colorScheme
+    Surface(modifier = Modifier.fillMaxSize(), color = colors.background) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -212,30 +225,40 @@ private fun AlarmScreen(
             verticalArrangement = Arrangement.Center,
         ) {
             if (test) {
-                Text(
-                    text = stringResource(R.string.alarm_test_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.tertiary,
-                )
-                Spacer(Modifier.height(8.dp))
+                Tag(stringResource(R.string.alarm_test_title), colors.tertiaryContainer, colors.onTertiaryContainer)
+                Spacer(Modifier.height(24.dp))
             }
+            // The pill in a soft accent glow: the one thing to notice first.
+            Box(
+                modifier = Modifier
+                    .size(160.dp)
+                    .clip(CircleShape)
+                    .background(Brush.radialGradient(listOf(colors.primary.copy(alpha = 0.28f), colors.primary.copy(alpha = 0f)))),
+                contentAlignment = Alignment.Center,
+            ) {
+                IconBadge(R.drawable.ic_stat_pill, colors.primary, colors.onPrimary, size = 96.dp, iconSize = 72.dp)
+            }
+            Spacer(Modifier.height(16.dp))
             Text(
                 text = stringResource(R.string.alarm_pill_progress, spec.dose, spec.doseCount),
-                style = MaterialTheme.typography.displaySmall,
+                style = MaterialTheme.typography.titleLarge,
+                color = colors.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
             Text(
                 text = CLOCK_FORMAT.format(now.atZone(ZoneId.systemDefault())),
-                style = MaterialTheme.typography.displayLarge,
+                style = MaterialTheme.typography.displayLarge.copy(fontSize = 96.sp, lineHeight = 104.sp),
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(vertical = 24.dp),
+                modifier = Modifier.padding(top = 8.dp, bottom = 32.dp),
             )
-            Button(onClick = onTook, modifier = BigButton) {
+            Button(onClick = onTook, modifier = BigButton, shape = MaterialTheme.shapes.large) {
+                Icon(painterResource(R.drawable.ic_check), contentDescription = null, modifier = Modifier.size(28.dp))
+                Spacer(Modifier.width(12.dp))
                 Text(stringResource(R.string.alarm_took), style = MaterialTheme.typography.headlineSmall)
             }
             if (spec.canSnooze) {
                 Spacer(Modifier.height(16.dp))
-                FilledTonalButton(onClick = onSnooze, modifier = BigButton) {
+                FilledTonalButton(onClick = onSnooze, modifier = BigButton, shape = MaterialTheme.shapes.large) {
                     Text(
                         pluralStringResource(R.plurals.action_snooze, spec.snoozesLeft, spec.snoozesLeft),
                         style = MaterialTheme.typography.headlineSmall,
@@ -243,7 +266,7 @@ private fun AlarmScreen(
                 }
             }
             Spacer(Modifier.height(16.dp))
-            OutlinedButton(onClick = onSkip, modifier = BigButton) {
+            OutlinedButton(onClick = onSkip, modifier = BigButton, shape = MaterialTheme.shapes.large) {
                 val label = if (spec.dose == 1) R.string.action_not_today else R.string.action_done_for_today
                 Text(stringResource(label), style = MaterialTheme.typography.titleLarge)
             }
