@@ -79,6 +79,19 @@ class SettingsFormTest {
         assertEquals("content://x/1", defaults.copy(alarmSoundUri = "content://x/1").parse().settings?.alarmSoundUri)
     }
 
+    @Test fun pharmacyPhoneIsTrimmedAndEmptyMeansNone() {
+        assertEquals("", defaults.pharmacyPhone)
+        assertNull(defaults.copy(pharmacyPhone = "   ").parse().settings!!.pharmacyPhone)
+        assertEquals("+31 20 123 4567", defaults.copy(pharmacyPhone = " +31 20 123 4567 ").parse().settings?.pharmacyPhone)
+        assertEquals("020 123", SettingsForm.from(Settings(pharmacyPhone = "020 123")).pharmacyPhone)
+    }
+
+    @Test fun invalidPharmacyPhoneIsErrorOnItsField() {
+        val r = defaults.copy(pharmacyPhone = "pharmacy").parse()
+        assertNull(r.settings)
+        assertTrue(r.errors[SettingsField.PHARMACY_PHONE] is FieldError.Invalid)
+    }
+
     @Test fun parseWholeNumberRules() {
         assertEquals(12, parseWholeNumber(" 12 "))
         assertNull(parseWholeNumber("1234567"))

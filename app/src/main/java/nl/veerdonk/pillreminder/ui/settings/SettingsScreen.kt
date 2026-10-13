@@ -173,6 +173,12 @@ internal fun SettingsContent(
                 }
             }
 
+            Group(R.string.settings_group_pharmacy) {
+                PhoneField(form.pharmacyPhone, errors[SettingsField.PHARMACY_PHONE]) { v ->
+                    onEdit { it.copy(pharmacyPhone = v) }
+                }
+            }
+
             Group(R.string.settings_group_alarm) {
                 SwitchField(R.string.setting_hold_first_alarm, R.string.setting_hold_first_alarm_hint, form.holdFirstAlarm) { on ->
                     onEdit { it.copy(holdFirstAlarm = on) }
@@ -275,6 +281,21 @@ private fun NumberField(@StringRes label: Int, value: String, error: FieldError?
         supportingText = errorText(error)?.let { { Text(it) } },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+@Composable
+private fun PhoneField(value: String, error: FieldError?, onChange: (String) -> Unit) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onChange,
+        label = { Text(stringResource(R.string.setting_pharmacy_phone)) },
+        isError = error != null,
+        supportingText = { Text(errorText(error) ?: stringResource(R.string.setting_pharmacy_phone_hint)) },
+        leadingIcon = { Icon(painterResource(R.drawable.ic_call), contentDescription = null) },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
         modifier = Modifier.fillMaxWidth(),
     )
 }

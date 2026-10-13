@@ -132,6 +132,8 @@
     <string name="pills_dialog_label">Number of pills</string>
     <string name="pills_dialog_error">Enter a whole number from 0 to %1$d</string>
     <string name="pills_stop">Stop counting</string>
+    <string name="pills_call_pharmacy">Call pharmacy</string>
+    <string name="pills_no_dialer">No phone app found to call %1$s</string>
     <string name="record_title">Record dose</string>
     <string name="record_took_now" tools:ignore="PluralsCandidate">Took pill %1$d now</string>
     <string name="record_took_at">Took pill %1$d at…</string>
@@ -163,6 +165,9 @@
     <string name="settings_group_doses">Doses</string>
     <string name="settings_group_alarm">Alarm</string>
     <string name="settings_group_advanced">Advanced</string>
+    <string name="settings_group_pharmacy">Pharmacy</string>
+    <string name="setting_pharmacy_phone">Pharmacy phone number</string>
+    <string name="setting_pharmacy_phone_hint">Shows a "Call pharmacy" button on the Pill supply card. Leave empty to hide it.</string>
     <string name="setting_weekday_earliest">Weekday detection starts</string>
     <string name="setting_weekday_fallback">Weekday fallback</string>
     <string name="setting_weekend_earliest">Weekend detection starts</string>

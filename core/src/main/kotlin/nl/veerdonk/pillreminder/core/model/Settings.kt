@@ -30,6 +30,7 @@ data class Settings(
     val dayRolloverTime: LocalTime = LocalTime.of(3, 0),
     val alarmSoundUri: String? = null, // null = system default alarm
     val showStatusNotification: Boolean = false, // FR-2.4: persistent notification between doses
+    val pharmacyPhone: String? = null, // FR-10.4: null = no "Call pharmacy" button
 ) {
     /** Human-readable validation errors; an empty list means the settings are valid. */
     fun validate(): List<String> = buildList {
@@ -49,6 +50,11 @@ data class Settings(
         }
         if (!weekendFallbackTime.isAfter(weekendEarliestTime)) {
             add("weekendFallbackTime must be later than weekendEarliestTime")
+        }
+        pharmacyPhone?.let { phone ->
+            if (!isValidPhone(phone)) {
+                add("pharmacyPhone must be up to $MAX_PHONE_LENGTH digits, spaces and + - ( ) characters")
+            }
         }
         if (dayRolloverTime.isAfter(MAX_ROLLOVER)) {
             add("dayRolloverTime must be between 00:00 and 06:00")
@@ -75,5 +81,14 @@ data class Settings(
 
     companion object {
         private val MAX_ROLLOVER: LocalTime = LocalTime.of(6, 0)
+        const val MAX_PHONE_LENGTH = 30
+        private const val PHONE_CHARS = "0123456789+-() "
+
+        /** A trimmed, dialable number: at least one digit, only [PHONE_CHARS], at most [MAX_PHONE_LENGTH] long. */
+        private fun isValidPhone(phone: String): Boolean =
+            phone == phone.trim() &&
+                phone.length <= MAX_PHONE_LENGTH &&
+                phone.any { it in '0'..'9' } &&
+                phone.all { it in PHONE_CHARS }
     }
 }
