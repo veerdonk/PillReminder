@@ -11,7 +11,7 @@ The owner ran these tests and reported the results. Per-case notes weren't recor
 |--------|-------|
 | Pass | M2–M23 and M14b. That covers fallback, reminder buttons, escalation, the snooze limit, the dose sequence, skipping, the ringer modes and DND, backdating, reboot, live settings, stale actions, Test alarm, missed doses and timezone. |
 | Pass (2026-10-12) | **M26** (status notification with countdown), owner report on the PR #12 build. |
-| Pending | **M1** (wake detection by unlocking) and **M24** (overnight Doze, real-world detection). Both need a real morning; the first one is scheduled for 2026-10-13. |
+| Pass (2026-10-13) | **M1** (wake detection by unlocking) and **M24** (overnight Doze, real-world detection), on a real morning with default settings: phone left locked overnight, unlocked twice after 07:00, the dose 1 reminder appeared and History showed wake source "detected". Owner report. |
 
 Bugs found in review before the manual pass (fixed):
 - The alarm and the reminder shared notification ID 1001. When the ring service stopped, the
@@ -19,4 +19,4 @@ Bugs found in review before the manual pass (fixed):
   re-posted ("Snoozed until", or the ongoing reminder after the last snooze). The alarm now uses
   ID 1002 (01 A26, design §7).
 
-Follow-ups: none open. Anything M1/M24 turns up is fixed from `main`.
+Follow-ups: none open.

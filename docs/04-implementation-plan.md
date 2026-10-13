@@ -28,7 +28,7 @@ Wave 5:  T12 integration hardening + manual test pass
 | T9 | UsageEventSource + AndroidWakeDetector | T4 | [x] |
 | T10 | Main UI: Home, Record dose, History, Settings | T5, T6 | [x] |
 | T11 | Setup checklist + PermissionChecker | T1 | [x] |
-| T12 | Integration, hardening, manual test pass | all | [ ] |
+| T12 | Integration, hardening, manual test pass | all | [x] |
 | T13 | Hold the alarm while Maps navigates (FR-3.8) | T3, T6, T11 | [x] |
 | T14 | Optional status notification with countdown (FR-2.4) | T3, T6, T7, T10 | [x] |
 | T15 | Pill supply count and low warning (FR-10) | T6, T7, T10 | [x] |
@@ -266,9 +266,9 @@ The on-device checks above are still open for the owner.*
 
 **Accept when:** all manual test cases pass, or have documented follow-up issues the owner has accepted.
 
-*In progress 2026-10-12. The owner reports every manual case passing except M1 and M24 (wake
-detection), which need a real morning; results are in `docs/test-results.md`. README has the
-install and Setup steps. Mark `[x]` once M1/M24 pass.*
+*Done 2026-10-13. Every manual case passes; M1 and M24 (wake detection) passed on a real
+morning on 2026-10-13. Results are in `docs/test-results.md`. README has the install and
+Setup steps.*
 
 ## T13 — Hold the alarm while Maps navigates
 **Do:**
