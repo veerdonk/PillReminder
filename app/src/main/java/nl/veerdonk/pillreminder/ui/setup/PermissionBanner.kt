@@ -1,18 +1,16 @@
 package nl.veerdonk.pillreminder.ui.setup
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -22,6 +20,8 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import nl.veerdonk.pillreminder.R
 import nl.veerdonk.pillreminder.platform.PermissionChecker
 import nl.veerdonk.pillreminder.platform.SetupStatus
+import nl.veerdonk.pillreminder.ui.common.AppCard
+import nl.veerdonk.pillreminder.ui.common.IconBadge
 
 /**
  * The checklist status, re-checked every time the screen resumes (the user comes back from a
@@ -47,17 +47,18 @@ fun PermissionBanner(
 ) {
     if (!status.showBanner) return
     val hard = status.missingHard.isNotEmpty()
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = if (hard) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.tertiaryContainer,
-            contentColor = if (hard) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onTertiaryContainer,
-        ),
+    val colors = MaterialTheme.colorScheme
+    AppCard(
+        modifier = modifier,
+        containerColor = if (hard) colors.errorContainer else colors.tertiaryContainer,
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
+        val content = if (hard) colors.onErrorContainer else colors.onTertiaryContainer
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            IconBadge(
+                R.drawable.ic_priority,
+                containerColor = if (hard) colors.error else colors.tertiary,
+                contentColor = if (hard) colors.onError else colors.onTertiary,
+            )
             Text(
                 text = if (hard) {
                     stringResource(R.string.banner_message_required)
@@ -65,8 +66,16 @@ fun PermissionBanner(
                     pluralStringResource(R.plurals.banner_message, status.missing.size, status.missing.size)
                 },
                 style = MaterialTheme.typography.bodyLarge,
+                color = content,
+                modifier = Modifier.weight(1f),
             )
-            Button(onClick = onOpenSetup) { Text(stringResource(R.string.banner_open_setup)) }
         }
+        Button(
+            onClick = onOpenSetup,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (hard) colors.error else colors.tertiary,
+                contentColor = if (hard) colors.onError else colors.onTertiary,
+            ),
+        ) { Text(stringResource(R.string.banner_open_setup)) }
     }
 }

@@ -11,11 +11,16 @@ import androidx.core.net.toUri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
@@ -23,7 +28,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Button
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -41,20 +48,26 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import nl.veerdonk.pillreminder.R
+import nl.veerdonk.pillreminder.core.model.Settings
 import nl.veerdonk.pillreminder.platform.DetectionLogEntry
 import nl.veerdonk.pillreminder.platform.NavigationStatus
+import nl.veerdonk.pillreminder.ui.common.AppCard
+import nl.veerdonk.pillreminder.ui.common.BackButton
+import nl.veerdonk.pillreminder.ui.common.CardLabel
+import nl.veerdonk.pillreminder.ui.common.ScreenGap
 import nl.veerdonk.pillreminder.ui.common.TimePickerDialog
 import nl.veerdonk.pillreminder.ui.common.formatTime
+import nl.veerdonk.pillreminder.ui.theme.Tabular
 import java.time.LocalTime
 import kotlinx.coroutines.flow.StateFlow
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel,
@@ -64,9 +77,40 @@ fun SettingsScreen(
     onOpenSetup: () -> Unit,
     onBack: () -> Unit,
 ) {
-    val form = viewModel.form
+    SettingsContent(
+        form = viewModel.form,
+        saved = viewModel.saved,
+        onEdit = viewModel::edit,
+        onSave = viewModel::save,
+        onReset = viewModel::resetToDefaults,
+        detectionLog = detectionLog,
+        navigationStatus = navigationStatus,
+        onTestAlarm = onTestAlarm,
+        onOpenSetup = onOpenSetup,
+        onBack = onBack,
+    )
+}
+
+/** Changes the form; [SettingsScreen] wires it to [SettingsViewModel.edit]. */
+internal typealias FormEdit = ((SettingsForm) -> SettingsForm) -> Unit
+
+/** The stateless Settings screen; [form] is null while loading. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun SettingsContent(
+    form: SettingsForm?,
+    saved: Settings?,
+    onEdit: FormEdit,
+    onSave: () -> Unit,
+    onReset: () -> Unit,
+    detectionLog: StateFlow<DetectionLogEntry?>,
+    navigationStatus: StateFlow<NavigationStatus>,
+    onTestAlarm: () -> Unit,
+    onOpenSetup: () -> Unit,
+    onBack: () -> Unit,
+) {
     val result = remember(form) { form?.parse() }
-    val unchanged = result?.settings != null && result.settings == viewModel.saved
+    val unchanged = result?.settings != null && result.settings == saved
     var confirmReset by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -74,11 +118,13 @@ fun SettingsScreen(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.settings_title)) },
-                navigationIcon = { TextButton(onClick = onBack) { Text(stringResource(R.string.setup_navigate_back)) } },
+                navigationIcon = { BackButton(onBack) },
                 actions = {
-                    TextButton(onClick = viewModel::save, enabled = result?.isValid == true && !unchanged) {
-                        Text(stringResource(R.string.settings_save))
-                    }
+                    Button(
+                        onClick = onSave,
+                        enabled = result?.isValid == true && !unchanged,
+                        modifier = Modifier.padding(end = 8.dp),
+                    ) { Text(stringResource(R.string.settings_save)) }
                 },
             )
         },
@@ -90,71 +136,73 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(ScreenGap),
         ) {
             Group(R.string.settings_group_wake) {
                 TimeField(R.string.setting_weekday_earliest, form.weekdayEarliest, errors[SettingsField.WEEKDAY_EARLIEST]) { t ->
-                    viewModel.edit { it.copy(weekdayEarliest = t) }
+                    onEdit { it.copy(weekdayEarliest = t) }
                 }
                 TimeField(R.string.setting_weekday_fallback, form.weekdayFallback, errors[SettingsField.WEEKDAY_FALLBACK]) { t ->
-                    viewModel.edit { it.copy(weekdayFallback = t) }
+                    onEdit { it.copy(weekdayFallback = t) }
                 }
                 TimeField(R.string.setting_weekend_earliest, form.weekendEarliest, errors[SettingsField.WEEKEND_EARLIEST]) { t ->
-                    viewModel.edit { it.copy(weekendEarliest = t) }
+                    onEdit { it.copy(weekendEarliest = t) }
                 }
                 TimeField(R.string.setting_weekend_fallback, form.weekendFallback, errors[SettingsField.WEEKEND_FALLBACK]) { t ->
-                    viewModel.edit { it.copy(weekendFallback = t) }
+                    onEdit { it.copy(weekendFallback = t) }
                 }
                 NumberField(R.string.setting_min_unlocks, form.minUnlocks, errors[SettingsField.MIN_UNLOCKS]) { v ->
-                    viewModel.edit { it.copy(minUnlocks = v) }
+                    onEdit { it.copy(minUnlocks = v) }
                 }
                 NumberField(R.string.setting_min_app_usage, form.minAppUsageMinutes, errors[SettingsField.MIN_APP_USAGE]) { v ->
-                    viewModel.edit { it.copy(minAppUsageMinutes = v) }
+                    onEdit { it.copy(minAppUsageMinutes = v) }
                 }
                 NumberField(R.string.setting_detection_window, form.detectionWindowMinutes, errors[SettingsField.DETECTION_WINDOW]) { v ->
-                    viewModel.edit { it.copy(detectionWindowMinutes = v) }
+                    onEdit { it.copy(detectionWindowMinutes = v) }
                 }
             }
 
             Group(R.string.settings_group_doses) {
                 NumberField(R.string.setting_doses_per_day, form.dosesPerDay, errors[SettingsField.DOSES_PER_DAY]) { v ->
-                    viewModel.edit { it.copy(dosesPerDay = v) }
+                    onEdit { it.copy(dosesPerDay = v) }
                 }
-                IntervalField(form, errors[SettingsField.DOSE_INTERVAL], viewModel)
+                IntervalField(form, errors[SettingsField.DOSE_INTERVAL], onEdit)
                 SwitchField(R.string.setting_status_notification, R.string.setting_status_notification_hint, form.showStatusNotification) { on ->
-                    viewModel.edit { it.copy(showStatusNotification = on) }
+                    onEdit { it.copy(showStatusNotification = on) }
                 }
             }
 
             Group(R.string.settings_group_alarm) {
                 SwitchField(R.string.setting_hold_first_alarm, R.string.setting_hold_first_alarm_hint, form.holdFirstAlarm) { on ->
-                    viewModel.edit { it.copy(holdFirstAlarm = on) }
+                    onEdit { it.copy(holdFirstAlarm = on) }
                 }
                 NumberField(R.string.setting_escalation_delay, form.escalationMinutes, errors[SettingsField.ESCALATION_DELAY]) { v ->
-                    viewModel.edit { it.copy(escalationMinutes = v) }
+                    onEdit { it.copy(escalationMinutes = v) }
                 }
                 NumberField(R.string.setting_snooze_duration, form.snoozeMinutes, errors[SettingsField.SNOOZE_DURATION]) { v ->
-                    viewModel.edit { it.copy(snoozeMinutes = v) }
+                    onEdit { it.copy(snoozeMinutes = v) }
                 }
                 NumberField(R.string.setting_max_snoozes, form.maxSnoozes, errors[SettingsField.MAX_SNOOZES]) { v ->
-                    viewModel.edit { it.copy(maxSnoozes = v) }
+                    onEdit { it.copy(maxSnoozes = v) }
                 }
                 NumberField(R.string.setting_ring_duration, form.ringMinutes, errors[SettingsField.RING_DURATION]) { v ->
-                    viewModel.edit { it.copy(ringMinutes = v) }
+                    onEdit { it.copy(ringMinutes = v) }
                 }
-                AlarmSoundField(form.alarmSoundUri) { uri -> viewModel.edit { it.copy(alarmSoundUri = uri) } }
-                OutlinedButton(onClick = onTestAlarm, modifier = Modifier.fillMaxWidth()) {
+                AlarmSoundField(form.alarmSoundUri) { uri -> onEdit { it.copy(alarmSoundUri = uri) } }
+                FilledTonalButton(onClick = onTestAlarm, modifier = Modifier.fillMaxWidth()) {
+                    Icon(painterResource(R.drawable.ic_alarm), contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.settings_test_alarm))
                 }
             }
 
             Group(R.string.settings_group_advanced) {
                 NumberField(R.string.setting_poll_interval, form.pollIntervalMinutes, errors[SettingsField.POLL_INTERVAL]) { v ->
-                    viewModel.edit { it.copy(pollIntervalMinutes = v) }
+                    onEdit { it.copy(pollIntervalMinutes = v) }
                 }
                 TimeField(R.string.setting_rollover, form.rollover, errors[SettingsField.ROLLOVER]) { t ->
-                    viewModel.edit { it.copy(rollover = t) }
+                    onEdit { it.copy(rollover = t) }
                 }
                 // Setup only opens by itself on first launch; this reaches it later, e.g. for the
                 // optional rows (FR-9.1).
@@ -178,7 +226,7 @@ fun SettingsScreen(
             confirmButton = {
                 TextButton(onClick = {
                     confirmReset = false
-                    viewModel.resetToDefaults()
+                    onReset()
                 }) { Text(stringResource(R.string.settings_reset_action)) }
             },
             dismissButton = { TextButton(onClick = { confirmReset = false }) { Text(stringResource(R.string.dialog_cancel)) } },
@@ -188,10 +236,25 @@ fun SettingsScreen(
 
 @Composable
 private fun Group(@StringRes title: Int, content: @Composable () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        HorizontalDivider()
-        Text(stringResource(title), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+    AppCard {
+        CardLabel(stringResource(title), color = MaterialTheme.colorScheme.primary)
         content()
+    }
+}
+
+/** A tappable setting row: the label on the left, its current value emphasised on the right. */
+@Composable
+private fun ValueRow(label: String, value: String, onClick: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .clickable(onClick = onClick),
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Text(value, style = MaterialTheme.typography.titleMedium.merge(Tabular), color = MaterialTheme.colorScheme.primary)
     }
 }
 
@@ -233,12 +296,12 @@ private fun SwitchField(@StringRes label: Int, @StringRes hint: Int, checked: Bo
 }
 
 @Composable
-private fun IntervalField(form: SettingsForm, error: FieldError?, viewModel: SettingsViewModel) {
+private fun IntervalField(form: SettingsForm, error: FieldError?, onEdit: FormEdit) {
     Column {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             OutlinedTextField(
                 value = form.doseIntervalHours,
-                onValueChange = { v -> viewModel.edit { it.copy(doseIntervalHours = v) } },
+                onValueChange = { v -> onEdit { it.copy(doseIntervalHours = v) } },
                 label = { Text(stringResource(R.string.setting_dose_interval_hours)) },
                 isError = error != null,
                 singleLine = true,
@@ -247,7 +310,7 @@ private fun IntervalField(form: SettingsForm, error: FieldError?, viewModel: Set
             )
             OutlinedTextField(
                 value = form.doseIntervalMinutes,
-                onValueChange = { v -> viewModel.edit { it.copy(doseIntervalMinutes = v) } },
+                onValueChange = { v -> onEdit { it.copy(doseIntervalMinutes = v) } },
                 label = { Text(stringResource(R.string.setting_dose_interval_minutes)) },
                 isError = error != null,
                 singleLine = true,
@@ -263,9 +326,7 @@ private fun IntervalField(form: SettingsForm, error: FieldError?, viewModel: Set
 private fun TimeField(@StringRes label: Int, value: LocalTime, error: FieldError?, onChange: (LocalTime) -> Unit) {
     var show by remember { mutableStateOf(false) }
     Column {
-        OutlinedButton(onClick = { show = true }, modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.settings_time_field, stringResource(label), formatTime(value)))
-        }
+        ValueRow(stringResource(label), formatTime(value)) { show = true }
         errorText(error)?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
     }
     if (show) {
@@ -292,7 +353,9 @@ private fun AlarmSoundField(uri: String?, onChange: (String?) -> Unit) {
         }
     }
     val title = remember(uri) { ringtoneTitle(context, uri) }
-    OutlinedButton(
+    ValueRow(
+        label = stringResource(R.string.settings_alarm_sound),
+        value = title ?: stringResource(R.string.settings_alarm_sound_default),
         onClick = {
             val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER)
                 .putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALARM)
@@ -305,8 +368,7 @@ private fun AlarmSoundField(uri: String?, onChange: (String?) -> Unit) {
                 )
             launcher.launch(intent)
         },
-        modifier = Modifier.fillMaxWidth(),
-    ) { Text(stringResource(R.string.settings_alarm_sound, title ?: stringResource(R.string.settings_alarm_sound_default))) }
+    )
 }
 
 private fun ringtoneTitle(context: Context, uri: String?): String? =
