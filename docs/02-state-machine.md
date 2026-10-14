@@ -267,6 +267,10 @@ handle(event, expectedDayId = null):
         pillStock.take(PillStock.pillsTaken(state, t.state))   // 01 FR-10.2
         lowStock = PillStock.lowStock(pillStock.current(), settings.dosesPerDay)
         o = outputs(t.state, settings, now)
+        if (lowStock?.pillsLeft == 0):                                             // 01 FR-10.7
+            apply(o with reminder = null, ringing = null,
+                  status = CallPharmacy(lowStock, settings.pharmacyPhone), userVisible = false)
+            return
         o.reminder.lowStock = lowStock; o.reminder.pharmacyPhone = settings.pharmacyPhone
         if (o.status == null && settings.showStatusNotification && t.state.phase == DONE
                 && lowStock != null)

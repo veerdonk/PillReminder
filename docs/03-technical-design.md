@@ -314,7 +314,8 @@ The reminder that follows a ring (subtitle `Snoozed` or `AlarmStopped`) is poste
 - With `lowStock.pillsLeft == 0` (01 FR-10.6, A64) the small icon is `ic_stat_warning`, the
   title "Out of pills: call the pharmacy" and the low line "Pill N of M is due, but none are
   left."; with `ReminderSpec.pharmacyPhone` set a third button "Call pharmacy" opens
-  `Intent.ACTION_DIAL`.
+  `Intent.ACTION_DIAL`. Since FR-10.7 (A65) the controller sends no reminder at 0 pills, so
+  this variant is only a fallback.
 - Actions:
   - "I took my pill" → `ActionReceiver` (`ACTION_TOOK`)
   - "Not today" (dose 1) / "I'm done for today" (later doses) → `ActionReceiver` (`ACTION_SKIP`)
@@ -325,7 +326,9 @@ The reminder that follows a ring (subtitle `Snoozed` or `AlarmStopped`) is poste
 The controller cancels it before reconciling the reminder and alarm, and posts it after them,
 so it never shows next to a reminder (A59). `CallPharmacy` (01 FR-10.6) uses `ic_stat_warning`,
 title "Call the pharmacy" (or "Out of pills: call the pharmacy" at 0), the "Running low" line as
-text, no countdown, and a "Call pharmacy" button when a number is set.
+text, no countdown, and a "Call pharmacy" button when a number is set. At 0 pills (01
+FR-10.7) the controller posts `CallPharmacy` in every phase, whatever `showStatusNotification`
+says, and cancels the reminder and alarm.
 
 **Alarm notification** (`buildAlarmNotification`):
 - Channel `alarm_v1`, category `ALARM`, `setFullScreenIntent(AlarmActivity PI, true)`, ongoing.

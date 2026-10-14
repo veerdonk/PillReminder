@@ -557,9 +557,9 @@ class ReminderControllerTest {
     }
 
     @Test
-    fun `status off - done with no pills left shows nothing`() = runTest {
+    fun `status off - done with pills low but not out shows nothing`() = runTest {
         val h = harness(done, t("16:00"))
-        h.pills.set(0)
+        h.pills.set(1)
         h.controller.tick()
         assertEquals(listOf("CancelStatus", "CancelReminder"), h.notificationCalls())
     }
@@ -568,9 +568,89 @@ class ReminderControllerTest {
     fun `status on - between doses the countdown stays, even when low`() = runTest {
         val h = harness(waiting, t("09:00"))
         h.settings.value = Settings(showStatusNotification = true)
-        h.pills.set(0)
+        h.pills.set(1)
         h.controller.tick()
         assertTrue(h.log.calls.filterIsInstance<Call.ShowStatus>().single().spec is StatusSpec.NextDose)
+    }
+
+    // --- out of pills: no reminders or alarms, only the call-the-pharmacy warning (FR-10.7) ---
+
+    private val outOfPills = StatusSpec.CallPharmacy(LowStock(pillsLeft = 0, daysLeft = 0), "010 123 4567")
+
+    // Shown by "Remind me now", so the alarm isn't held until the fallback.
+    private val manualReminder = reminder.copy(wakeSource = WakeSource.MANUAL)
+
+    @Test
+    fun `out of pills - every phase shows only the call-the-pharmacy warning, status on or off`() = runTest {
+        val cases = listOf(
+            beforeWindow to t("06:00"),
+            detecting to t("07:30"),
+            waiting to t("09:00"),
+            reminder to t("07:30"),
+            reminder to t("07:40"), // would escalate to RINGING
+            ringing to t("07:41"),
+            snoozed to t("07:45"),
+            pendingSilent to t("09:00"),
+            done to t("16:00"),
+        )
+        for (statusOn in listOf(false, true)) {
+            for ((state, now) in cases) {
+                val h = harness(state, now)
+                h.settings.value = Settings(showStatusNotification = statusOn, pharmacyPhone = "010 123 4567")
+                h.pills.set(0)
+                h.controller.tick()
+                val label = "${state.phase} at $now, status $statusOn"
+                assertEquals(label, listOf("CancelReminder", "ShowStatus"), h.notificationCalls())
+                assertEquals(label, outOfPills, h.log.calls.filterIsInstance<Call.ShowStatus>().single().spec)
+                assertTrue(label, h.log.calls.any { it is Call.EnsureStopped })
+                assertEquals(label, false, h.lastSchedule().userVisible)
+            }
+        }
+    }
+
+    @Test
+    fun `out of pills - the day keeps running underneath`() = runTest {
+        val h = harness(manualReminder, t("07:40"))
+        h.pills.set(0)
+        h.controller.tick()
+        assertEquals(Phase.RINGING, h.state.phase)
+        assertTrue(h.log.calls.none { it is Call.EnsureRinging })
+    }
+
+    @Test
+    fun `taking the last pill switches to the out-of-pills warning`() = runTest {
+        val h = harness(reminder, t("07:30"))
+        h.settings.value = Settings(pharmacyPhone = "010 123 4567")
+        h.pills.set(1)
+        h.controller.handle(Event.TookDose(1, t("07:30"), DoseSource.NOTIFICATION))
+        assertEquals(0, h.pills.current())
+        assertEquals(outOfPills, h.log.calls.filterIsInstance<Call.ShowStatus>().last().spec)
+
+        // The next dose comes due: still no reminder.
+        h.log.calls.clear()
+        h.clock.now = t("11:30")
+        h.controller.tick()
+        assertEquals(Phase.REMINDER, h.state.phase)
+        assertEquals(listOf("CancelReminder", "ShowStatus"), h.notificationCalls())
+    }
+
+    @Test
+    fun `a refill brings reminders and alarms back`() = runTest {
+        val h = harness(manualReminder, t("07:30"))
+        h.pills.set(0)
+        h.controller.tick()
+        assertTrue(h.log.calls.none { it is Call.ShowReminder })
+
+        h.log.calls.clear()
+        h.pills.refill(90)
+        h.controller.tick()
+        assertEquals(listOf("CancelStatus", "ShowReminder"), h.notificationCalls())
+        assertEquals(true, h.lastSchedule().userVisible)
+
+        h.log.calls.clear()
+        h.clock.now = t("07:40")
+        h.controller.tick()
+        assertTrue(h.log.calls.any { it is Call.EnsureRinging })
     }
 
     @Test

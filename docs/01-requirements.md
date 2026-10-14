@@ -223,6 +223,11 @@ alarms are recomputed where the spec defines them in terms of the setting (see s
   and the status notification (FR-2.4) on, that notification stays up once the day is done,
   showing only a "Call the pharmacy" warning, until the next day starts. Both have a "Call
   pharmacy" button when a number is set (FR-10.4).
+- **FR-10.7** (owner request) At **0 pills** no reminder notification shows and no alarm
+  rings: there is nothing to take. Instead the "Out of pills: call the pharmacy" warning stays
+  up all the time, day and night, whether or not the status notification (FR-2.4) is on, with
+  the "Call pharmacy" button when a number is set. As soon as the count goes above 0 ("Pills
+  refilled", or a new count on Home) reminders and alarms work as usual again.
 
 ## 4. Non-functional requirements
 
@@ -469,4 +474,12 @@ Open:
   "nothing to show" in DONE; between doses the countdown stays. It needs the status switch on,
   as it is that notification staying up. It uses the same 5-day threshold
   as "Running low" (`PillStock.LOW_STOCK_DAYS`), changed from 3 days at the owner's request. It updates on the next event: tapping "Pills refilled" or
-  changing the count on Home removes it.
+  changing the count on Home removes it. At 0 pills FR-10.7 takes over (A65), so the
+  out-of-pills reminder no longer shows.
+- **A65** (owner request) Out of pills (FR-10.7). The day keeps running underneath: phases
+  still move on by time and history records the doses as usual, only the reminder and alarm are
+  held back and the next wake-up is not shown as an alarm (no `setAlarmClock`). So after a
+  refill the next event shows whatever is due by then: a reminder, the alarm if a dose is
+  overdue and its ringing time has come, or nothing once the day is done. "I took my pill"
+  still works from Home and keeps the count at 0. A count that is off (not tracked) never
+  suppresses anything.

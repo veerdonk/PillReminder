@@ -35,6 +35,7 @@ Wave 5:  T12 integration hardening + manual test pass
 | T16 | Call pharmacy button (FR-10.4) | T10, T15 | [x] |
 | T17 | Pills refilled button (FR-10.5) | T15, T16 | [x] |
 | T18 | Call the pharmacy warnings (FR-10.6) | T14, T16 | [x] |
+| T19 | No reminders or alarms while out of pills (FR-10.7) | T18 | [x] |
 
 T6 integrates T7, T8 and T9 through their interfaces. If one of those isn't done yet,
 T6 uses a no-op/fake implementation and the owning task wires the real one into `AppContainer`.
@@ -340,3 +341,14 @@ M29 passes on the phone.
 passes on the phone.
 
 *Done 2026-10-14 (owner request). Assumption A64 in 01. M30 is open for the owner.*
+
+## T19 — No reminders or alarms while out of pills
+**Do:**
+- At 0 pills the controller shows no reminder and no alarm, and keeps the "Out of pills: call
+  the pharmacy" status notification up in every phase, status switch on or off.
+- A refill (or any count above 0) brings reminders and alarms back on the next event.
+
+**Accept when:** controller tests cover every phase at 0 pills, taking the last pill and a
+refill; M31 passes on the phone.
+
+*Done 2026-10-14 (owner request). Assumption A65 in 01. M31 is open for the owner.*
