@@ -69,4 +69,20 @@ class PillStockTest {
     fun `no warning when the count isn't tracked`() {
         assertNull(PillStock.lowStock(null, 3))
     }
+
+    @Test
+    fun `a refill adds the bottle to the pills left`() {
+        assertEquals(102, PillStock.afterRefill(12, 90))
+        assertEquals(90, PillStock.afterRefill(0, 90))
+    }
+
+    @Test
+    fun `a refill while not counting starts the count`() {
+        assertEquals(90, PillStock.afterRefill(null, 90))
+    }
+
+    @Test
+    fun `a refill is capped at the largest count`() {
+        assertEquals(PillStock.MAX_PILLS, PillStock.afterRefill(PillStock.MAX_PILLS - 10, 90))
+    }
 }

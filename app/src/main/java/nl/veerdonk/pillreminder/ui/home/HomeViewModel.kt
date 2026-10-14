@@ -75,6 +75,14 @@ class HomeViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
+    /** "Pills refilled": adds [bottleSize] pills, then ticks like [setPillsLeft] (FR-10.5). */
+    fun refill(bottleSize: Int) {
+        container.appScope.launch {
+            container.pillStock.refill(bottleSize)
+            container.reminderController.tick()
+        }
+    }
+
     private companion object {
         const val REFRESH_MILLIS = 15_000L
         const val STOP_TIMEOUT_MILLIS = 5_000L

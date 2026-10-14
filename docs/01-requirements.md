@@ -175,6 +175,7 @@ alarms are recomputed where the spec defines them in terms of the setting (see s
 | `alarmSound` | System default alarm | Ringtone picker | Nice-to-have |
 | `showStatusNotification` | off | on/off | FR-2.4 |
 | `pharmacyPhone` | empty | Up to 30 digits, spaces and `+ - ( )` | FR-10.4. Empty = no button |
+| `bottleSize` | 90 | 1–999 | FR-10.5. Pills added by "Pills refilled" |
 
 - The minimum values of 1 minute are deliberate. They let me test the full flow quickly on the
   phone.
@@ -212,6 +213,9 @@ alarms are recomputed where the spec defines them in terms of the setting (see s
 - **FR-10.4** Settings → Pharmacy holds my pharmacy's phone number. When it is set, the Pill
   supply card has a **"Call pharmacy"** button that opens the phone app with the number filled
   in; I tap Call myself. Without a number there is no button.
+- **FR-10.5** The Pill supply card has a **"Pills refilled"** button. After a short confirmation
+  it adds one bottle (`bottleSize`, set in Settings → Pharmacy) to the pills I have left, so I
+  don't have to type the new total. While the count is off, it starts counting at one bottle.
 
 ## 4. Non-functional requirements
 
@@ -446,3 +450,8 @@ Open:
   shows. The number is stored as typed (trimmed); only its characters and length are checked,
   not whether it is a real number. "Reset to defaults" keeps it, since it is contact data
   rather than a tuning value.
+- **A63** (owner request) Pills refilled (FR-10.5). The button adds the bottle to the current
+  count rather than replacing it, so leftover pills from the old bottle still count; the total
+  is capped at 9999. It asks "Add 90 pills? You'll have N pills left." first, so a stray tap
+  doesn't silently inflate the count. "Reset to defaults" sets the bottle size back to 90, as it
+  is a tuning value, unlike the pharmacy number.

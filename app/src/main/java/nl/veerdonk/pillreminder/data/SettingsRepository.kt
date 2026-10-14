@@ -84,6 +84,7 @@ class DataStoreSettingsRepository(
         p[Keys.SHOW_STATUS_NOTIFICATION] = s.showStatusNotification
         val uri = s.alarmSoundUri
         if (uri == null) p.remove(Keys.ALARM_SOUND_URI) else p[Keys.ALARM_SOUND_URI] = uri
+        p[Keys.BOTTLE_SIZE] = s.bottleSize
         val phone = s.pharmacyPhone
         if (phone == null) p.remove(Keys.PHARMACY_PHONE) else p[Keys.PHARMACY_PHONE] = phone
     }
@@ -111,6 +112,7 @@ class DataStoreSettingsRepository(
                 alarmSoundUri = p[Keys.ALARM_SOUND_URI],
                 showStatusNotification = p[Keys.SHOW_STATUS_NOTIFICATION] ?: d.showStatusNotification,
                 pharmacyPhone = p[Keys.PHARMACY_PHONE],
+                bottleSize = p[Keys.BOTTLE_SIZE] ?: d.bottleSize,
             )
         } catch (_: DateTimeException) {
             return d // a minute-of-day outside 0..1439
@@ -140,6 +142,7 @@ class DataStoreSettingsRepository(
         val ALARM_SOUND_URI = stringPreferencesKey("alarm_sound_uri")
         val SHOW_STATUS_NOTIFICATION = booleanPreferencesKey("show_status_notification")
         val PHARMACY_PHONE = stringPreferencesKey("pharmacy_phone")
+        val BOTTLE_SIZE = intPreferencesKey("bottle_size")
     }
 
     companion object {

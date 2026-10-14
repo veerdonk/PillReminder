@@ -29,6 +29,9 @@ interface PillStockRepository {
 
     /** Subtracts [count] taken pills, never below zero. Does nothing while untracked. */
     suspend fun take(count: Int)
+
+    /** Adds a refill of [bottleSize] pills; starts counting at [bottleSize] while untracked (FR-10.5). */
+    suspend fun refill(bottleSize: Int)
 }
 
 /** [PillStockRepository] on its own small Preferences DataStore file (`pill_stock`). */
@@ -51,6 +54,11 @@ class DataStorePillStockRepository(
     override suspend fun take(count: Int) {
         // One edit, so a count set at the same moment isn't lost.
         dataStore.edit { p -> p[PILLS_LEFT]?.let { p[PILLS_LEFT] = PillStock.afterTaking(it, count) } }
+    }
+
+    override suspend fun refill(bottleSize: Int) {
+        require(bottleSize > 0) { "Invalid bottle size $bottleSize" }
+        dataStore.edit { p -> p[PILLS_LEFT] = PillStock.afterRefill(p[PILLS_LEFT], bottleSize) }
     }
 
     companion object {

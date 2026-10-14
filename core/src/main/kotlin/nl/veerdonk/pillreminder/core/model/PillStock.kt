@@ -32,6 +32,12 @@ object PillStock {
     /** The count after [taken] more pills, never below zero. */
     fun afterTaking(pillsLeft: Int, taken: Int): Int = (pillsLeft - taken).coerceAtLeast(0)
 
+    /**
+     * The count after a refill of [bottleSize] pills (FR-10.5): leftover pills are kept, so the
+     * bottle is added to them; an untracked count starts at [bottleSize]. Capped at [MAX_PILLS].
+     */
+    fun afterRefill(pillsLeft: Int?, bottleSize: Int): Int = ((pillsLeft ?: 0) + bottleSize).coerceAtMost(MAX_PILLS)
+
     /** Whole days [pillsLeft] lasts at [dosesPerDay] pills a day. */
     fun daysLeft(pillsLeft: Int, dosesPerDay: Int): Int = pillsLeft / dosesPerDay
 

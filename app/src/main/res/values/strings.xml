@@ -17,6 +17,10 @@
     <string name="status_wake_title">Once you\'re up: pill 1 of %1$d</string>
     <string name="status_wake_text">By %1$s at the latest</string>
     <string name="notification_low_stock">Running low: %1$s, enough for %2$s</string>
+    <plurals name="pills_refill_title">
+        <item quantity="one">Add %1$d pill?</item>
+        <item quantity="other">Add %1$d pills?</item>
+    </plurals>
     <plurals name="pills_left">
         <item quantity="one">%1$d pill left</item>
         <item quantity="other">%1$d pills left</item>
@@ -133,6 +137,9 @@
     <string name="pills_dialog_error">Enter a whole number from 0 to %1$d</string>
     <string name="pills_stop">Stop counting</string>
     <string name="pills_call_pharmacy">Call pharmacy</string>
+    <string name="pills_refilled">Pills refilled (+%1$d)</string>
+    <string name="pills_refill_text">You\'ll have %1$s.</string>
+    <string name="pills_refill_action">Add</string>
     <string name="pills_no_dialer">No phone app found to call %1$s</string>
     <string name="record_title">Record dose</string>
     <string name="record_took_now" tools:ignore="PluralsCandidate">Took pill %1$d now</string>
@@ -167,6 +174,8 @@
     <string name="settings_group_advanced">Advanced</string>
     <string name="settings_group_pharmacy">Pharmacy</string>
     <string name="setting_pharmacy_phone">Pharmacy phone number</string>
+    <string name="setting_bottle_size">Pills per bottle</string>
+    <string name="setting_bottle_size_hint">"Pills refilled" on the Pill supply card adds this many.</string>
     <string name="setting_pharmacy_phone_hint">Shows a "Call pharmacy" button on the Pill supply card. Leave empty to hide it.</string>
     <string name="setting_weekday_earliest">Weekday detection starts</string>
     <string name="setting_weekday_fallback">Weekday fallback</string>

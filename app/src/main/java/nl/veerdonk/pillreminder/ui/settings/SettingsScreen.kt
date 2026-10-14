@@ -177,6 +177,14 @@ internal fun SettingsContent(
                 PhoneField(form.pharmacyPhone, errors[SettingsField.PHARMACY_PHONE]) { v ->
                     onEdit { it.copy(pharmacyPhone = v) }
                 }
+                NumberField(
+                    R.string.setting_bottle_size,
+                    form.bottleSize,
+                    errors[SettingsField.BOTTLE_SIZE],
+                    hint = R.string.setting_bottle_size_hint,
+                ) { v ->
+                    onEdit { it.copy(bottleSize = v) }
+                }
             }
 
             Group(R.string.settings_group_alarm) {
@@ -272,13 +280,20 @@ private fun errorText(error: FieldError?): String? = when (error) {
 }
 
 @Composable
-private fun NumberField(@StringRes label: Int, value: String, error: FieldError?, onChange: (String) -> Unit) {
+private fun NumberField(
+    @StringRes label: Int,
+    value: String,
+    error: FieldError?,
+    @StringRes hint: Int? = null,
+    onChange: (String) -> Unit,
+) {
+    val supporting = errorText(error) ?: hint?.let { stringResource(it) }
     OutlinedTextField(
         value = value,
         onValueChange = onChange,
         label = { Text(stringResource(label)) },
         isError = error != null,
-        supportingText = errorText(error)?.let { { Text(it) } },
+        supportingText = supporting?.let { { Text(it) } },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         modifier = Modifier.fillMaxWidth(),

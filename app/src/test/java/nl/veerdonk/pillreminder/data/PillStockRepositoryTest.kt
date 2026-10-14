@@ -44,6 +44,21 @@ class PillStockRepositoryTest {
         assertNull(repo.current())
     }
 
+    @Test
+    fun refillAddsToTheCountOrStartsIt() = runTest {
+        val repo = newRepo()
+        repo.refill(90)
+        assertEquals(90, repo.current())
+        repo.take(78)
+        repo.refill(90)
+        assertEquals(102, repo.current())
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun rejectsEmptyRefill() = runTest {
+        newRepo().refill(0)
+    }
+
     @Test(expected = IllegalArgumentException::class)
     fun rejectsNegativeCount() = runTest {
         newRepo().set(-1)
