@@ -536,22 +536,22 @@ class ReminderControllerTest {
     }
 
     @Test
-    fun `status on - the last dose leaves a call-the-pharmacy warning under three days`() = runTest {
+    fun `status on - the last dose leaves a call-the-pharmacy warning under five days`() = runTest {
         val h = harness(waiting.copy(nextDose = 3, doses = listOf(taken(1, t("07:30")), taken(2, t("11:30")))), t("15:30"))
         h.settings.value = Settings(showStatusNotification = true, pharmacyPhone = "010 123 4567")
-        h.pills.set(9) // three days: after this dose 8 are left, two days
+        h.pills.set(15) // five days: after this dose 14 are left, four days
         h.controller.handle(Event.TookDose(3, t("15:30"), DoseSource.APP_NOW))
 
         assertEquals(Phase.DONE, h.state.phase)
         val status = h.log.calls.filterIsInstance<Call.ShowStatus>().single().spec
-        assertEquals(StatusSpec.CallPharmacy(LowStock(pillsLeft = 8, daysLeft = 2), "010 123 4567"), status)
+        assertEquals(StatusSpec.CallPharmacy(LowStock(pillsLeft = 14, daysLeft = 4), "010 123 4567"), status)
     }
 
     @Test
-    fun `status on - done with three days or more left shows nothing`() = runTest {
+    fun `status on - done with five days or more left shows nothing`() = runTest {
         val h = harness(done, t("16:00"))
         h.settings.value = Settings(showStatusNotification = true)
-        h.pills.set(9)
+        h.pills.set(15)
         h.controller.tick()
         assertEquals(listOf("CancelStatus", "CancelReminder"), h.notificationCalls())
     }

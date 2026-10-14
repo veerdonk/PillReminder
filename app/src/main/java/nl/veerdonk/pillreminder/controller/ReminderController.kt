@@ -107,12 +107,12 @@ class ReminderController(
 
     /**
      * Once the day is done the status notification would go away (FR-2.4), but with under
-     * `PillStock.CALL_PHARMACY_DAYS` days of pills left it stays up with only the "call the
+     * `PillStock.LOW_STOCK_DAYS` days of pills left (the "Running low" threshold) it stays up with only the "call the
      * pharmacy" warning (FR-10.6).
      */
     private fun callPharmacyStatus(state: DayState, settings: Settings, lowStock: LowStock?): StatusSpec? {
         if (!settings.showStatusNotification || state.phase != Phase.DONE) return null
-        if (lowStock == null || !PillStock.shouldCallPharmacy(lowStock)) return null
+        if (lowStock == null) return null
         return StatusSpec.CallPharmacy(lowStock, settings.pharmacyPhone)
     }
 

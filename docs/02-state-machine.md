@@ -269,7 +269,7 @@ handle(event, expectedDayId = null):
         o = outputs(t.state, settings, now)
         o.reminder.lowStock = lowStock; o.reminder.pharmacyPhone = settings.pharmacyPhone
         if (o.status == null && settings.showStatusNotification && t.state.phase == DONE
-                && lowStock != null && lowStock.daysLeft < PillStock.CALL_PHARMACY_DAYS)
+                && lowStock != null)
             o.status = CallPharmacy(lowStock, settings.pharmacyPhone)              // 01 FR-10.6
         apply(o)   // notifications, ring service, AlarmManager
     }

@@ -11,8 +11,6 @@ import nl.veerdonk.pillreminder.core.engine.t
 import nl.veerdonk.pillreminder.core.engine.tick
 import nl.veerdonk.pillreminder.core.engine.waiting
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -86,13 +84,5 @@ class PillStockTest {
     @Test
     fun `a refill is capped at the largest count`() {
         assertEquals(PillStock.MAX_PILLS, PillStock.afterRefill(PillStock.MAX_PILLS - 10, 90))
-    }
-
-    @Test
-    fun `call the pharmacy below three days of pills`() {
-        // At 3 a day: 9 pills is exactly three days, 8 is two.
-        assertFalse(PillStock.shouldCallPharmacy(PillStock.lowStock(9, 3)!!))
-        assertTrue(PillStock.shouldCallPharmacy(PillStock.lowStock(8, 3)!!))
-        assertTrue(PillStock.shouldCallPharmacy(PillStock.lowStock(0, 3)!!))
     }
 }

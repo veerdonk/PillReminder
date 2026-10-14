@@ -333,7 +333,7 @@ M29 passes on the phone.
 **Do:**
 - Out of pills, the reminder shows a warning icon, "Out of pills: call the pharmacy" and a
   "Call pharmacy" button.
-- With the status notification on and under 3 days of pills left, it stays up after the last
+- With the status notification on and under 5 days of pills left, it stays up after the last
   dose with only the "Call the pharmacy" warning (`StatusSpec.CallPharmacy`).
 
 **Accept when:** unit tests cover the threshold, the controller and both notifications; M30

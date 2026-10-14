@@ -76,7 +76,7 @@ sealed interface StatusSpec {
     data class WaitingForWake(val doseCount: Int, val fallbackAt: Instant) : StatusSpec
 
     /**
-     * DONE with under `PillStock.CALL_PHARMACY_DAYS` days of pills left: only the "call the
+     * DONE while the supply is low (under `PillStock.LOW_STOCK_DAYS` days): only the "call the
      * pharmacy" warning (FR-10.6). Set by the controller from the pill count, not by
      * `Engine.outputs`; [pharmacyPhone] adds a "Call pharmacy" button.
      */
