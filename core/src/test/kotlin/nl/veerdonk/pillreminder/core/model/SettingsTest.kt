@@ -36,6 +36,7 @@ class SettingsTest {
         assertEquals(LocalTime.of(3, 0), d.dayRolloverTime)
         assertEquals(null, d.alarmSoundUri)
         assertEquals(null, d.pharmacyPhone)
+        assertEquals(90, d.bottleSize)
         assertEquals(emptyList<String>(), d.validate())
     }
 
@@ -44,7 +45,7 @@ class SettingsTest {
         val s = d.copy(
             minUnlocks = 1, minAppUsage = min(0), detectionWindow = min(5), detectionPollInterval = min(1),
             dosesPerDay = 1, doseInterval = min(1), escalationDelay = min(1), snoozeDuration = min(1),
-            maxSnoozes = 0, alarmRingDuration = min(1), dayRolloverTime = LocalTime.MIDNIGHT,
+            maxSnoozes = 0, alarmRingDuration = min(1), dayRolloverTime = LocalTime.MIDNIGHT, bottleSize = 1,
         )
         assertEquals(emptyList<String>(), s.validate())
     }
@@ -54,7 +55,7 @@ class SettingsTest {
         val s = d.copy(
             minUnlocks = 10, minAppUsage = min(30), detectionWindow = min(120), detectionPollInterval = min(15),
             dosesPerDay = 6, doseInterval = Duration.ofHours(12), escalationDelay = min(120), snoozeDuration = min(60),
-            maxSnoozes = 10, alarmRingDuration = min(10), dayRolloverTime = LocalTime.of(6, 0),
+            maxSnoozes = 10, alarmRingDuration = min(10), dayRolloverTime = LocalTime.of(6, 0), bottleSize = 999,
         )
         assertEquals(emptyList<String>(), s.validate())
     }
@@ -137,5 +138,11 @@ class SettingsTest {
             assertSingleError(d.copy(pharmacyPhone = it), "pharmacyPhone")
         }
         assertEquals(emptyList<String>(), d.copy(pharmacyPhone = "0".repeat(30)).validate())
+    }
+
+    @Test
+    fun `bottle size is between 1 and 999`() {
+        assertSingleError(d.copy(bottleSize = 0), "bottleSize")
+        assertSingleError(d.copy(bottleSize = 1000), "bottleSize")
     }
 }

@@ -92,6 +92,13 @@ class SettingsFormTest {
         assertTrue(r.errors[SettingsField.PHARMACY_PHONE] is FieldError.Invalid)
     }
 
+    @Test fun bottleSizeRoundTripsAndIsValidated() {
+        assertEquals("90", defaults.bottleSize)
+        assertEquals(120, defaults.copy(bottleSize = "120").parse().settings?.bottleSize)
+        assertEquals(FieldError.NotANumber, defaults.copy(bottleSize = "").parse().errors[SettingsField.BOTTLE_SIZE])
+        assertTrue(defaults.copy(bottleSize = "0").parse().errors[SettingsField.BOTTLE_SIZE] is FieldError.Invalid)
+    }
+
     @Test fun parseWholeNumberRules() {
         assertEquals(12, parseWholeNumber(" 12 "))
         assertNull(parseWholeNumber("1234567"))

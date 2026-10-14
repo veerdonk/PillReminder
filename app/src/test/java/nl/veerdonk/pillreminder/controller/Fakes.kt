@@ -162,4 +162,8 @@ class FakePillStock(initial: Int? = null) : PillStockRepository {
     override suspend fun take(count: Int) {
         flow.value = flow.value?.let { PillStock.afterTaking(it, count) }
     }
+
+    override suspend fun refill(bottleSize: Int) {
+        flow.value = PillStock.afterRefill(flow.value, bottleSize)
+    }
 }

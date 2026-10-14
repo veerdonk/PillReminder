@@ -56,6 +56,7 @@ class SettingsRepositoryTest {
         alarmSoundUri = "content://media/internal/audio/media/42",
         showStatusNotification = true,
         pharmacyPhone = "+31 20 123 4567",
+        bottleSize = 120,
     )
 
     @Test

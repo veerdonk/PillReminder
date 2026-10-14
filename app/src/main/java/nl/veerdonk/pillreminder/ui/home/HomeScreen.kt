@@ -53,6 +53,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import nl.veerdonk.pillreminder.R
 import nl.veerdonk.pillreminder.core.model.PillStock
+import nl.veerdonk.pillreminder.core.model.Settings
 import nl.veerdonk.pillreminder.platform.SetupStatus
 import nl.veerdonk.pillreminder.ui.common.AppCard
 import nl.veerdonk.pillreminder.ui.common.CardLabel
@@ -92,6 +93,7 @@ fun HomeScreen(
             skip = viewModel::skip,
             resumeDay = viewModel::resumeDay,
             setPillsLeft = viewModel::setPillsLeft,
+            refill = viewModel::refill,
             callPharmacy = { phone -> openDialer(context, phone) },
         ),
     )
@@ -114,6 +116,7 @@ internal class HomeCallbacks(
     val skip: () -> Unit,
     val resumeDay: () -> Unit,
     val setPillsLeft: (Int?) -> Unit,
+    val refill: (bottleSize: Int) -> Unit,
     val callPharmacy: (String) -> Unit,
 )
 
@@ -159,7 +162,7 @@ internal fun HomeContent(
                 NextActionCard(m, zone)
                 ActionsCard(m, callbacks)
                 TodayCard(m, zone)
-                PillSupplyCard(pillsLeft, m.settings.dosesPerDay, m.settings.pharmacyPhone, callbacks)
+                PillSupplyCard(pillsLeft, m.settings, callbacks)
             }
         }
     }
@@ -410,8 +413,11 @@ private fun backdateErrorText(error: BackdateResult.Invalid, zone: ZoneId): Stri
 
 /** Pills on hand, counted down per dose taken, with the low-supply warning (FR-10). */
 @Composable
-private fun PillSupplyCard(pillsLeft: Int?, dosesPerDay: Int, pharmacyPhone: String?, callbacks: HomeCallbacks) {
+private fun PillSupplyCard(pillsLeft: Int?, settings: Settings, callbacks: HomeCallbacks) {
+    val dosesPerDay = settings.dosesPerDay
+    val bottleSize = settings.bottleSize
     var editing by remember { mutableStateOf(false) }
+    var confirmRefill by remember { mutableStateOf(false) }
     val colors = MaterialTheme.colorScheme
     AppCard {
         CardLabel(stringResource(R.string.pills_title))
@@ -444,7 +450,7 @@ private fun PillSupplyCard(pillsLeft: Int?, dosesPerDay: Int, pharmacyPhone: Str
             )
         }
         // Only with a number set in Settings → Pharmacy (FR-10.4); stands out once supply is low.
-        pharmacyPhone?.let { phone ->
+        settings.pharmacyPhone?.let { phone ->
             val label: @Composable () -> Unit = {
                 Icon(painterResource(R.drawable.ic_call), contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
@@ -455,6 +461,12 @@ private fun PillSupplyCard(pillsLeft: Int?, dosesPerDay: Int, pharmacyPhone: Str
             } else {
                 OutlinedButton(onClick = { callbacks.callPharmacy(phone) }, modifier = SecondaryButton) { label() }
             }
+        }
+        // Adds a bottle of `bottleSize` (Settings → Pharmacy) to what's left (FR-10.5).
+        OutlinedButton(onClick = { confirmRefill = true }, modifier = SecondaryButton) {
+            Icon(painterResource(R.drawable.ic_add), contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(R.string.pills_refilled, bottleSize))
         }
         TextButton(onClick = { editing = true }) {
             Icon(painterResource(R.drawable.ic_edit), contentDescription = null, modifier = Modifier.size(18.dp))
@@ -470,6 +482,21 @@ private fun PillSupplyCard(pillsLeft: Int?, dosesPerDay: Int, pharmacyPhone: Str
                 callbacks.setPillsLeft(count)
             },
             onDismiss = { editing = false },
+        )
+    }
+    if (confirmRefill) {
+        val after = PillStock.afterRefill(pillsLeft, bottleSize)
+        AlertDialog(
+            onDismissRequest = { confirmRefill = false },
+            title = { Text(pluralStringResource(R.plurals.pills_refill_title, bottleSize, bottleSize)) },
+            text = { Text(stringResource(R.string.pills_refill_text, pluralStringResource(R.plurals.pills_left, after, after))) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmRefill = false
+                    callbacks.refill(bottleSize)
+                }) { Text(stringResource(R.string.pills_refill_action)) }
+            },
+            dismissButton = { TextButton(onClick = { confirmRefill = false }) { Text(stringResource(R.string.dialog_cancel)) } },
         )
     }
 }

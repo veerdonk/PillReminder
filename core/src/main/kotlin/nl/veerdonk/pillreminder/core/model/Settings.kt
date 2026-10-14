@@ -31,6 +31,7 @@ data class Settings(
     val alarmSoundUri: String? = null, // null = system default alarm
     val showStatusNotification: Boolean = false, // FR-2.4: persistent notification between doses
     val pharmacyPhone: String? = null, // FR-10.4: null = no "Call pharmacy" button
+    val bottleSize: Int = 90, // FR-10.5: pills added by "Pills refilled"
 ) {
     /** Human-readable validation errors; an empty list means the settings are valid. */
     fun validate(): List<String> = buildList {
@@ -44,6 +45,7 @@ data class Settings(
         minutesRange("snoozeDuration", snoozeDuration, 1, 60)
         intRange("maxSnoozes", maxSnoozes, 0, 10)
         minutesRange("alarmRingDuration", alarmRingDuration, 1, 10)
+        intRange("bottleSize", bottleSize, 1, MAX_BOTTLE_SIZE)
 
         if (!weekdayFallbackTime.isAfter(weekdayEarliestTime)) {
             add("weekdayFallbackTime must be later than weekdayEarliestTime")
@@ -82,6 +84,7 @@ data class Settings(
     companion object {
         private val MAX_ROLLOVER: LocalTime = LocalTime.of(6, 0)
         const val MAX_PHONE_LENGTH = 30
+        const val MAX_BOTTLE_SIZE = 999
         private const val PHONE_CHARS = "0123456789+-() "
 
         /** A trimmed, dialable number: at least one digit, only [PHONE_CHARS], at most [MAX_PHONE_LENGTH] long. */

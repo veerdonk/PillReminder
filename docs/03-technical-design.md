@@ -100,6 +100,7 @@ data class Settings(
     val alarmSoundUri: String? = null,          // null = system default alarm
     val showStatusNotification: Boolean = false, // FR-2.4
     val pharmacyPhone: String? = null,           // FR-10.4, null = no "Call pharmacy" button
+    val bottleSize: Int = 90,                    // FR-10.5, pills added by "Pills refilled"
 ) {
     fun validate(): List<String>                 // human-readable errors; empty = valid (ranges in 01 §FR-8)
 }
@@ -177,7 +178,8 @@ interface RingController { fun ensureRinging(spec: RingSpec); fun ensureStopped(
 interface StateStore { val state: Flow<DayState?>; suspend fun load(): DayState?; suspend fun save(s: DayState) }
 interface SettingsRepository { val settings: Flow<Settings>; suspend fun current(): Settings; suspend fun update(s: Settings) }
 interface PillStockRepository { val pillsLeft: Flow<Int?>; suspend fun current(): Int?
-                                suspend fun set(count: Int?); suspend fun take(count: Int) }   // null = not counting; take() floors at 0
+                                suspend fun set(count: Int?); suspend fun take(count: Int)
+                                suspend fun refill(bottleSize: Int) }   // null = not counting; take() floors at 0; refill() adds, or starts at bottleSize
 interface HistoryRepository { fun days(): Flow<List<DayWithDoses>>; suspend fun upsert(day: DayState) }
 // days() is newest first. DayWithDoses (data/history) is a day_log row plus its dose_log rows
 // as core DoseRecords, ordered by index. Instants have millisecond precision.

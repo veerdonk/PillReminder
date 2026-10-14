@@ -22,6 +22,7 @@ enum class SettingsField {
     RING_DURATION,
     ROLLOVER,
     PHARMACY_PHONE,
+    BOTTLE_SIZE,
 }
 
 sealed interface FieldError {
@@ -57,6 +58,7 @@ data class SettingsForm(
     val alarmSoundUri: String?,
     val showStatusNotification: Boolean,
     val pharmacyPhone: String,
+    val bottleSize: String,
 ) {
     /** Parses and validates the form. */
     fun parse(): FormResult {
@@ -77,6 +79,7 @@ data class SettingsForm(
         val snooze = int(SettingsField.SNOOZE_DURATION, snoozeMinutes)
         val maxSnoozes = int(SettingsField.MAX_SNOOZES, maxSnoozes)
         val ring = int(SettingsField.RING_DURATION, ringMinutes)
+        val bottle = int(SettingsField.BOTTLE_SIZE, bottleSize)
 
         if (errors.isNotEmpty()) return FormResult(null, errors)
 
@@ -101,6 +104,7 @@ data class SettingsForm(
             alarmSoundUri = alarmSoundUri,
             showStatusNotification = showStatusNotification,
             pharmacyPhone = pharmacyPhone.trim().ifEmpty { null }, // empty = no number
+            bottleSize = bottle!!,
         )
         val problems = settings.validate()
         for (message in problems) {
@@ -133,6 +137,7 @@ data class SettingsForm(
                 alarmSoundUri = s.alarmSoundUri,
                 showStatusNotification = s.showStatusNotification,
                 pharmacyPhone = s.pharmacyPhone.orEmpty(),
+                bottleSize = s.bottleSize.toString(),
             )
         }
     }
@@ -169,6 +174,7 @@ internal fun fieldsOf(message: String): List<SettingsField> {
         "weekendFallbackTime" -> listOf(SettingsField.WEEKEND_FALLBACK)
         "dayRolloverTime" -> listOf(SettingsField.ROLLOVER)
         "pharmacyPhone" -> listOf(SettingsField.PHARMACY_PHONE)
+        "bottleSize" -> listOf(SettingsField.BOTTLE_SIZE)
         else -> emptyList()
     }
 }

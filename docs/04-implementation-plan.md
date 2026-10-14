@@ -33,6 +33,7 @@ Wave 5:  T12 integration hardening + manual test pass
 | T14 | Optional status notification with countdown (FR-2.4) | T3, T6, T7, T10 | [x] |
 | T15 | Pill supply count and low warning (FR-10) | T6, T7, T10 | [x] |
 | T16 | Call pharmacy button (FR-10.4) | T10, T15 | [x] |
+| T17 | Pills refilled button (FR-10.5) | T15, T16 | [x] |
 
 T6 integrates T7, T8 and T9 through their interfaces. If one of those isn't done yet,
 T6 uses a no-op/fake implementation and the owning task wires the real one into `AppContainer`.
@@ -315,3 +316,14 @@ passes on the phone.
 phone.
 
 *Done 2026-10-13 (owner request). Assumption A62 in 01. M28 is open for the owner.*
+
+## T17 — Pills refilled button
+**Do:**
+- `Settings.bottleSize` (default 90), stored and editable in Settings → Pharmacy.
+- `PillStock.afterRefill` and `PillStockRepository.refill`; a "Pills refilled" button on the
+  Pill supply card that adds one bottle after a confirmation.
+
+**Accept when:** unit tests cover the refill rule, the validation, the form and the stored key;
+M29 passes on the phone.
+
+*Done 2026-10-14 (owner request). Assumption A63 in 01. M29 is open for the owner.*
