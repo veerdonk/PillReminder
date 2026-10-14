@@ -95,13 +95,25 @@ class ReminderController(
             if (taken > 0) pillStock.take(taken)
             val lowStock = PillStock.lowStock(pillStock.current(), settings.dosesPerDay)
             val outputs = Engine.outputs(t.state, settings, now, zone)
-            apply(
-                outputs.copy(
-                    reminder = outputs.reminder?.copy(lowStock = lowStock, pharmacyPhone = settings.pharmacyPhone),
-                    status = outputs.status ?: callPharmacyStatus(t.state, settings, lowStock),
-                ),
-                t.state,
-            )
+            if (lowStock?.pillsLeft == 0) {
+                // Out of pills (FR-10.7): no reminder and no alarm, only the call-the-pharmacy
+                // warning, until the count goes above 0. The day keeps running underneath, so
+                // the next event after a refill shows whatever is due by then.
+                val out = outputs.copy(
+                    reminder = null,
+                    ringing = null,
+                    status = StatusSpec.CallPharmacy(lowStock, settings.pharmacyPhone),
+                )
+                apply(out, userVisible = false)
+            } else {
+                apply(
+                    outputs.copy(
+                        reminder = outputs.reminder?.copy(lowStock = lowStock, pharmacyPhone = settings.pharmacyPhone),
+                        status = outputs.status ?: callPharmacyStatus(t.state, settings, lowStock),
+                    ),
+                    userVisible = t.state.phase in USER_VISIBLE_PHASES,
+                )
+            }
         }
     }
 
@@ -130,9 +142,10 @@ class ReminderController(
 
     /**
      * Reconciles the platform with [outputs], in the order of design §8. Every step is
-     * idempotent, so running it again with the same outputs changes nothing.
+     * idempotent, so running it again with the same outputs changes nothing. [userVisible]
+     * picks `setAlarmClock` for the next wake-up (design §5).
      */
-    private fun apply(outputs: Outputs, state: DayState) {
+    private fun apply(outputs: Outputs, userVisible: Boolean) {
         val ringing = outputs.ringing
         // The status notification is null whenever a reminder or the alarm shows. It is cancelled
         // before and shown after the others, so only one pill notification is visible (FR-2.4).
@@ -149,13 +162,14 @@ class ReminderController(
             ringController.ensureRinging(ringing)
         }
         if (status != null) notifier.showStatus(status)
-        alarmScheduler.schedule(outputs.nextWakeAt, userVisible = state.phase in USER_VISIBLE_PHASES)
+        alarmScheduler.schedule(outputs.nextWakeAt, userVisible = userVisible)
     }
 
     private companion object {
         /**
          * Phases whose next wake-up is a deadline the user sees (design §5): `setAlarmClock`.
-         * Not HELD_DRIVING: its wake-up is only a backup re-check (design §6a).
+         * Not HELD_DRIVING: its wake-up is only a backup re-check (design §6a). Out of pills
+         * none is: no alarm will go off (FR-10.7).
          */
         val USER_VISIBLE_PHASES = setOf(Phase.WAITING, Phase.REMINDER, Phase.RINGING, Phase.SNOOZED)
     }
