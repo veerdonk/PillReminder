@@ -34,6 +34,7 @@ Wave 5:  T12 integration hardening + manual test pass
 | T15 | Pill supply count and low warning (FR-10) | T6, T7, T10 | [x] |
 | T16 | Call pharmacy button (FR-10.4) | T10, T15 | [x] |
 | T17 | Pills refilled button (FR-10.5) | T15, T16 | [x] |
+| T18 | Call the pharmacy warnings (FR-10.6) | T14, T16 | [x] |
 
 T6 integrates T7, T8 and T9 through their interfaces. If one of those isn't done yet,
 T6 uses a no-op/fake implementation and the owning task wires the real one into `AppContainer`.
@@ -327,3 +328,15 @@ phone.
 M29 passes on the phone.
 
 *Done 2026-10-14 (owner request). Assumption A63 in 01. M29 is open for the owner.*
+
+## T18 — Call the pharmacy warnings
+**Do:**
+- Out of pills, the reminder shows a warning icon, "Out of pills: call the pharmacy" and a
+  "Call pharmacy" button.
+- With the status notification on and under 3 days of pills left, it stays up after the last
+  dose with only the "Call the pharmacy" warning (`StatusSpec.CallPharmacy`).
+
+**Accept when:** unit tests cover the threshold, the controller and both notifications; M30
+passes on the phone.
+
+*Done 2026-10-14 (owner request). Assumption A64 in 01. M30 is open for the owner.*

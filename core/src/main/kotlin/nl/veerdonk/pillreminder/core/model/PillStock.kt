@@ -17,6 +17,12 @@ object PillStock {
     /** Warn when fewer than this many days of pills are left (FR-10.3). */
     const val LOW_STOCK_DAYS = 5
 
+    /**
+     * Below this many days of pills, the status notification stays up once the day is done,
+     * asking you to call the pharmacy (FR-10.6).
+     */
+    const val CALL_PHARMACY_DAYS = 3
+
     /** Largest count the app accepts as input. */
     const val MAX_PILLS = 9999
 
@@ -46,6 +52,9 @@ object PillStock {
         if (pillsLeft == null || pillsLeft >= LOW_STOCK_DAYS * dosesPerDay) return null
         return LowStock(pillsLeft, daysLeft(pillsLeft, dosesPerDay))
     }
+
+    /** True when [lowStock] is below [CALL_PHARMACY_DAYS] days (FR-10.6). */
+    fun shouldCallPharmacy(lowStock: LowStock): Boolean = lowStock.daysLeft < CALL_PHARMACY_DAYS
 
     private fun takenCount(day: DayState): Int = day.doses.count { it.status == DoseStatus.TAKEN }
 }

@@ -5,10 +5,12 @@ import kotlinx.coroutines.sync.withLock
 import nl.veerdonk.pillreminder.core.engine.Engine
 import nl.veerdonk.pillreminder.core.model.DayState
 import nl.veerdonk.pillreminder.core.model.Event
+import nl.veerdonk.pillreminder.core.model.LowStock
 import nl.veerdonk.pillreminder.core.model.Outputs
 import nl.veerdonk.pillreminder.core.model.Phase
 import nl.veerdonk.pillreminder.core.model.PillStock
 import nl.veerdonk.pillreminder.core.model.Settings
+import nl.veerdonk.pillreminder.core.model.StatusSpec
 import nl.veerdonk.pillreminder.core.time.TimeMath
 import nl.veerdonk.pillreminder.data.PillStockRepository
 import nl.veerdonk.pillreminder.data.SettingsRepository
@@ -93,8 +95,25 @@ class ReminderController(
             if (taken > 0) pillStock.take(taken)
             val lowStock = PillStock.lowStock(pillStock.current(), settings.dosesPerDay)
             val outputs = Engine.outputs(t.state, settings, now, zone)
-            apply(outputs.copy(reminder = outputs.reminder?.copy(lowStock = lowStock)), t.state)
+            apply(
+                outputs.copy(
+                    reminder = outputs.reminder?.copy(lowStock = lowStock, pharmacyPhone = settings.pharmacyPhone),
+                    status = outputs.status ?: callPharmacyStatus(t.state, settings, lowStock),
+                ),
+                t.state,
+            )
         }
+    }
+
+    /**
+     * Once the day is done the status notification would go away (FR-2.4), but with under
+     * `PillStock.CALL_PHARMACY_DAYS` days of pills left it stays up with only the "call the
+     * pharmacy" warning (FR-10.6).
+     */
+    private fun callPharmacyStatus(state: DayState, settings: Settings, lowStock: LowStock?): StatusSpec? {
+        if (!settings.showStatusNotification || state.phase != Phase.DONE) return null
+        if (lowStock == null || !PillStock.shouldCallPharmacy(lowStock)) return null
+        return StatusSpec.CallPharmacy(lowStock, settings.pharmacyPhone)
     }
 
     /** A time-based Tick. `wakeDetected` and `navigating` are filled in by [handle]. */

@@ -212,7 +212,8 @@ data class Outputs(
     val status: StatusSpec? = null, // FR-2.4 status notification, only with S.showStatusNotification
 )
 data class ReminderSpec(val dayId: LocalDate, val dose: Int, val doseCount: Int, val alarmStyle: Boolean, val canSnooze: Boolean, val snoozesLeft: Int, val subtitle: ReminderSubtitle?,
-                        val lowStock: LowStock? = null)   // always null from outputs(); the orchestrator fills it (01 FR-10.3)
+                        val lowStock: LowStock? = null,   // always null from outputs(); the orchestrator fills it (01 FR-10.3)
+                        val pharmacyPhone: String? = null) // likewise, from S.pharmacyPhone (01 FR-10.6)
 data class LowStock(val pillsLeft: Int, val daysLeft: Int)
 sealed interface ReminderSubtitle {                 // worded by :app from strings.xml (A9)
     data class Snoozed(val until: Instant) : ReminderSubtitle   // "Snoozed until HH:MM", device zone
@@ -223,6 +224,7 @@ data class RingSpec(val dayId: LocalDate, val dose: Int, val doseCount: Int, val
 sealed interface StatusSpec {                       // worded by :app
     data class NextDose(val dose: Int, val doseCount: Int, val dueAt: Instant) : StatusSpec  // WAITING, counts down to dueAt
     data class WaitingForWake(val doseCount: Int, val fallbackAt: Instant) : StatusSpec      // BEFORE_WINDOW, DETECTING
+    data class CallPharmacy(val lowStock: LowStock, val pharmacyPhone: String?) : StatusSpec // DONE, low supply; set by the orchestrator (01 FR-10.6)
 }
 
 fun outputs(state: DayState, s: Settings, now: Instant, zone: ZoneId): Outputs
@@ -264,7 +266,12 @@ handle(event, expectedDayId = null):
         history.upsert(t.state)            // keep today's history row live
         pillStock.take(PillStock.pillsTaken(state, t.state))   // 01 FR-10.2
         lowStock = PillStock.lowStock(pillStock.current(), settings.dosesPerDay)
-        apply(outputs(t.state, settings, now) with reminder.lowStock = lowStock)   // notifications, ring service, AlarmManager
+        o = outputs(t.state, settings, now)
+        o.reminder.lowStock = lowStock; o.reminder.pharmacyPhone = settings.pharmacyPhone
+        if (o.status == null && settings.showStatusNotification && t.state.phase == DONE
+                && lowStock != null && lowStock.daysLeft < PillStock.CALL_PHARMACY_DAYS)
+            o.status = CallPharmacy(lowStock, settings.pharmacyPhone)              // 01 FR-10.6
+        apply(o)   // notifications, ring service, AlarmManager
     }
 ```
 

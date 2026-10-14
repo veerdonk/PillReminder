@@ -17,6 +17,10 @@
     <string name="status_wake_title">Once you\'re up: pill 1 of %1$d</string>
     <string name="status_wake_text">By %1$s at the latest</string>
     <string name="notification_low_stock">Running low: %1$s, enough for %2$s</string>
+    <string name="notification_out_title">Out of pills: call the pharmacy</string>
+    <string name="notification_out_text">Pill %1$d of %2$d is due, but none are left.</string>
+    <string name="status_call_title">Call the pharmacy</string>
+    <string name="status_out_text">Update your pill count once you\'ve refilled.</string>
     <plurals name="pills_refill_title">
         <item quantity="one">Add %1$d pill?</item>
         <item quantity="other">Add %1$d pills?</item>
