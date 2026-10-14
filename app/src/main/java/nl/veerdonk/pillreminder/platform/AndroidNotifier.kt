@@ -10,6 +10,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.AudioAttributes
+import android.net.Uri
 import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -100,9 +101,19 @@ class AndroidNotifier(
             // the reminder was already shown, and the user is driving (FR-3.8).
             builder.setSilent(true).setSubText(subtitle)
         }
-        // "Running low" replaces the collapsed text, so it shows without expanding (FR-10.3).
-        val lowStock = spec.lowStock?.let(::lowStockText)
+        // "Running low" replaces the collapsed text, so it shows without expanding (FR-10.3). Out
+        // of pills, a warning asking you to call the pharmacy replaces the title too (FR-10.6).
+        val outOfPills = spec.lowStock?.pillsLeft == 0
+        val lowStock = if (outOfPills) {
+            context.getString(R.string.notification_out_text, spec.dose, spec.doseCount)
+        } else {
+            spec.lowStock?.let(::lowStockText)
+        }
         if (lowStock != null) builder.setContentText(lowStock)
+        if (outOfPills) {
+            builder.setSmallIcon(R.drawable.ic_stat_warning).setContentTitle(context.getString(R.string.notification_out_title))
+            spec.pharmacyPhone?.let { addCallPharmacyAction(builder, it) }
+        }
         val lines = listOfNotNull(subtitle, lowStock, context.getString(R.string.notification_text))
         if (lines.size > 1) builder.setStyle(NotificationCompat.BigTextStyle().bigText(lines.joinToString("\n")))
         post(NOTIFICATION_ID, builder.build())
@@ -135,6 +146,15 @@ class AndroidNotifier(
                 .setContentTitle(context.getString(R.string.status_wake_title, spec.doseCount))
                 .setContentText(context.getString(R.string.status_wake_text, formatTime(spec.fallbackAt)))
                 .setShowWhen(false)
+            is StatusSpec.CallPharmacy -> {
+                val out = spec.lowStock.pillsLeft == 0
+                builder
+                    .setSmallIcon(R.drawable.ic_stat_warning)
+                    .setContentTitle(context.getString(if (out) R.string.notification_out_title else R.string.status_call_title))
+                    .setContentText(if (out) context.getString(R.string.status_out_text) else lowStockText(spec.lowStock))
+                    .setShowWhen(false)
+                spec.pharmacyPhone?.let { addCallPharmacyAction(builder, it) }
+            }
         }
         post(STATUS_NOTIFICATION_ID, builder.build())
     }
@@ -177,6 +197,17 @@ class AndroidNotifier(
         builder
             .addAction(0, context.getString(R.string.action_took), actionIntent(ActionReceiver.ACTION_TOOK, dayId, dose, source))
             .addAction(0, context.getString(skipLabel), actionIntent(ActionReceiver.ACTION_SKIP, dayId, dose, source))
+    }
+
+    /** "Call pharmacy": opens the dialer with [phone] filled in, like the Home button (FR-10.4). */
+    private fun addCallPharmacyAction(builder: NotificationCompat.Builder, phone: String) {
+        val dial = PendingIntent.getActivity(
+            context,
+            REQUEST_CALL_PHARMACY,
+            Intent(Intent.ACTION_DIAL, Uri.fromParts("tel", phone, null)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        builder.addAction(0, context.getString(R.string.pills_call_pharmacy), dial)
     }
 
     private fun subtitleText(subtitle: ReminderSubtitle): String = when (subtitle) {
@@ -254,6 +285,7 @@ class AndroidNotifier(
         private const val REQUEST_CONTENT = 100
         private const val REQUEST_ALARM_SCREEN = 101
         private const val REQUEST_STATUS_CONTENT = 102
+        private const val REQUEST_CALL_PHARMACY = 103
 
         private val TIME_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 

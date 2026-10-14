@@ -528,6 +528,52 @@ class ReminderControllerTest {
     }
 
     @Test
+    fun `the reminder carries the pharmacy number`() = runTest {
+        val h = harness(waiting, t("12:00"))
+        h.settings.value = Settings(pharmacyPhone = "010 123 4567")
+        h.controller.tick()
+        assertEquals("010 123 4567", h.log.calls.filterIsInstance<Call.ShowReminder>().last().spec.pharmacyPhone)
+    }
+
+    @Test
+    fun `status on - the last dose leaves a call-the-pharmacy warning under five days`() = runTest {
+        val h = harness(waiting.copy(nextDose = 3, doses = listOf(taken(1, t("07:30")), taken(2, t("11:30")))), t("15:30"))
+        h.settings.value = Settings(showStatusNotification = true, pharmacyPhone = "010 123 4567")
+        h.pills.set(15) // five days: after this dose 14 are left, four days
+        h.controller.handle(Event.TookDose(3, t("15:30"), DoseSource.APP_NOW))
+
+        assertEquals(Phase.DONE, h.state.phase)
+        val status = h.log.calls.filterIsInstance<Call.ShowStatus>().single().spec
+        assertEquals(StatusSpec.CallPharmacy(LowStock(pillsLeft = 14, daysLeft = 4), "010 123 4567"), status)
+    }
+
+    @Test
+    fun `status on - done with five days or more left shows nothing`() = runTest {
+        val h = harness(done, t("16:00"))
+        h.settings.value = Settings(showStatusNotification = true)
+        h.pills.set(15)
+        h.controller.tick()
+        assertEquals(listOf("CancelStatus", "CancelReminder"), h.notificationCalls())
+    }
+
+    @Test
+    fun `status off - done with no pills left shows nothing`() = runTest {
+        val h = harness(done, t("16:00"))
+        h.pills.set(0)
+        h.controller.tick()
+        assertEquals(listOf("CancelStatus", "CancelReminder"), h.notificationCalls())
+    }
+
+    @Test
+    fun `status on - between doses the countdown stays, even when low`() = runTest {
+        val h = harness(waiting, t("09:00"))
+        h.settings.value = Settings(showStatusNotification = true)
+        h.pills.set(0)
+        h.controller.tick()
+        assertTrue(h.log.calls.filterIsInstance<Call.ShowStatus>().single().spec is StatusSpec.NextDose)
+    }
+
+    @Test
     fun `the zone is read on every call`() = runTest {
         var zone = ams
         val log = CallLog()

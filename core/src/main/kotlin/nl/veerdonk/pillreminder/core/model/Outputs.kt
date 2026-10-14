@@ -29,6 +29,8 @@ data class ReminderSpec(
     val subtitle: ReminderSubtitle?,
     /** Set by the controller from the pill count, not by `Engine.outputs` (FR-10.3). */
     val lowStock: LowStock? = null,
+    /** Set by the controller from `Settings.pharmacyPhone`, for the out-of-pills reminder (FR-10.6). */
+    val pharmacyPhone: String? = null,
 )
 
 /**
@@ -72,4 +74,11 @@ sealed interface StatusSpec {
 
     /** BEFORE_WINDOW, DETECTING: pill 1 comes once you're up, at [fallbackAt] at the latest. */
     data class WaitingForWake(val doseCount: Int, val fallbackAt: Instant) : StatusSpec
+
+    /**
+     * DONE while the supply is low (under `PillStock.LOW_STOCK_DAYS` days): only the "call the
+     * pharmacy" warning (FR-10.6). Set by the controller from the pill count, not by
+     * `Engine.outputs`; [pharmacyPhone] adds a "Call pharmacy" button.
+     */
+    data class CallPharmacy(val lowStock: LowStock, val pharmacyPhone: String?) : StatusSpec
 }

@@ -62,7 +62,8 @@ settings to make the app reliable (see `06-device-setup-oneplus.md`).
   up whenever no reminder or alarm shows. Between doses it reads "Pill N of M at HH:MM" with a
   live countdown to that time; before dose 1 "Once you're up: pill 1 of M, by HH:MM at the
   latest" (the fallback). Once the day is done (all doses taken, or the rest skipped) it goes
-  away until the next day's rollover (owner request). When a reminder or alarm is
+  away until the next day's rollover (owner request), unless fewer than 5 days of pills are
+  left (FR-10.6). When a reminder or alarm is
   due it gives way to it, so only one pill notification shows at a time (A59).
 
 ### FR-3 Escalation to alarm
@@ -216,6 +217,12 @@ alarms are recomputed where the spec defines them in terms of the setting (see s
 - **FR-10.5** The Pill supply card has a **"Pills refilled"** button. After a short confirmation
   it adds one bottle (`bottleSize`, set in Settings → Pharmacy) to the pills I have left, so I
   don't have to type the new total. While the count is off, it starts counting at one bottle.
+- **FR-10.6** (owner request) Out of pills, the reminder notification shows a warning icon and
+  reads "Out of pills: call the pharmacy" instead of "Time for pill N of M" and the "Running
+  low: 0 pills left" line. With fewer than **5 days** of pills left (the FR-10.3 threshold)
+  and the status notification (FR-2.4) on, that notification stays up once the day is done,
+  showing only a "Call the pharmacy" warning, until the next day starts. Both have a "Call
+  pharmacy" button when a number is set (FR-10.4).
 
 ## 4. Non-functional requirements
 
@@ -455,3 +462,11 @@ Open:
   is capped at 9999. It asks "Add 90 pills? You'll have N pills left." first, so a stray tap
   doesn't silently inflate the count. "Reset to defaults" sets the bottle size back to 90, as it
   is a tuning value, unlike the pharmacy number.
+- **A64** (owner request) Call the pharmacy (FR-10.6). The out-of-pills reminder keeps its "I
+  took my pill" and skip buttons, so the day still runs as usual, and adds "Call pharmacy"
+  (opens the dialer, as A62) when a number is set. The alarm notification and alarm screen are
+  unchanged (as A60). The warning after the last dose only replaces the status notification's
+  "nothing to show" in DONE; between doses the countdown stays. It needs the status switch on,
+  as it is that notification staying up. It uses the same 5-day threshold
+  as "Running low" (`PillStock.LOW_STOCK_DAYS`), changed from 3 days at the owner's request. It updates on the next event: tapping "Pills refilled" or
+  changing the count on Home removes it.

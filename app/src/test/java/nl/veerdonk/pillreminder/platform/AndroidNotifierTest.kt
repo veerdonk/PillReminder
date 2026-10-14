@@ -5,7 +5,9 @@ import android.app.Application
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.Intent
 import android.provider.Settings
+import nl.veerdonk.pillreminder.R
 import nl.veerdonk.pillreminder.core.model.DoseSource
 import nl.veerdonk.pillreminder.core.model.LowStock
 import nl.veerdonk.pillreminder.core.model.ReminderSpec
@@ -45,7 +47,12 @@ class AndroidNotifierTest {
 
     private val day = LocalDate.parse("2026-10-13")
 
-    private fun reminder(dose: Int, subtitle: ReminderSubtitle? = null, lowStock: LowStock? = null) = ReminderSpec(
+    private fun reminder(
+        dose: Int,
+        subtitle: ReminderSubtitle? = null,
+        lowStock: LowStock? = null,
+        pharmacyPhone: String? = null,
+    ) = ReminderSpec(
         dayId = day,
         dose = dose,
         doseCount = 3,
@@ -54,6 +61,7 @@ class AndroidNotifierTest {
         snoozesLeft = 3,
         subtitle = subtitle,
         lowStock = lowStock,
+        pharmacyPhone = pharmacyPhone,
     )
 
     private fun ring(canSnooze: Boolean, snoozesLeft: Int) =
@@ -216,6 +224,58 @@ class AndroidNotifierTest {
         )
         // The warning doesn't silence a fresh reminder.
         assertEquals(Notification.GROUP_ALERT_ALL, n.groupAlertBehavior)
+    }
+
+    @Test
+    fun `out of pills - a warning to call the pharmacy replaces the title and the low line`() {
+        notifier.showReminder(reminder(dose = 2, lowStock = LowStock(pillsLeft = 0, daysLeft = 0), pharmacyPhone = "010 123 4567"))
+
+        val n = posted()
+        assertEquals("Out of pills: call the pharmacy", n.title)
+        assertEquals("Pill 2 of 3 is due, but none are left.", n.text)
+        assertEquals(R.drawable.ic_stat_warning, n.smallIcon.resId)
+        assertEquals(listOf("I took my pill", "I'm done for today", "Call pharmacy"), n.actionLabels)
+        val dial = shadowOf(n.actions[2].actionIntent).savedIntent
+        assertEquals(Intent.ACTION_DIAL, dial.action)
+        assertEquals("tel:010%20123%204567", dial.dataString)
+    }
+
+    @Test
+    fun `out of pills without a pharmacy number has no call button`() {
+        notifier.showReminder(reminder(dose = 1, lowStock = LowStock(pillsLeft = 0, daysLeft = 0)))
+        assertEquals(listOf("I took my pill", "Not today"), posted().actionLabels)
+    }
+
+    @Test
+    fun `running low keeps the pill icon and has no call button`() {
+        notifier.showReminder(reminder(dose = 1, lowStock = LowStock(pillsLeft = 2, daysLeft = 0), pharmacyPhone = "0101234567"))
+        val n = posted()
+        assertEquals("Time for pill 1 of 3", n.title)
+        assertEquals(R.drawable.ic_stat_pill, n.smallIcon.resId)
+        assertEquals(2, n.actions.size)
+    }
+
+    @Test
+    fun `status after the last dose asks to call the pharmacy`() {
+        notifier.showStatus(StatusSpec.CallPharmacy(LowStock(pillsLeft = 4, daysLeft = 1), "0101234567"))
+
+        val n = shadow.getNotification(AndroidNotifier.STATUS_NOTIFICATION_ID)
+        assertEquals("Call the pharmacy", n.title)
+        assertEquals("Running low: 4 pills left, enough for 1 day", n.text)
+        assertEquals(R.drawable.ic_stat_warning, n.smallIcon.resId)
+        assertTrue(n.flags and Notification.FLAG_ONGOING_EVENT != 0)
+        assertFalse(n.extras.getBoolean(Notification.EXTRA_SHOW_CHRONOMETER))
+        assertEquals(listOf("Call pharmacy"), n.actionLabels)
+    }
+
+    @Test
+    fun `status out of pills without a number has no button`() {
+        notifier.showStatus(StatusSpec.CallPharmacy(LowStock(pillsLeft = 0, daysLeft = 0), null))
+
+        val n = shadow.getNotification(AndroidNotifier.STATUS_NOTIFICATION_ID)
+        assertEquals("Out of pills: call the pharmacy", n.title)
+        assertEquals("Update your pill count once you've refilled.", n.text)
+        assertTrue(n.actionLabels.isEmpty())
     }
 
     @Test

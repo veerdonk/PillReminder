@@ -14,7 +14,7 @@ data class LowStock(val pillsLeft: Int, val daysLeft: Int)
  * it spans days; `:app` stores it and calls these helpers.
  */
 object PillStock {
-    /** Warn when fewer than this many days of pills are left (FR-10.3). */
+    /** Warn when fewer than this many days of pills are left (FR-10.3, FR-10.6). */
     const val LOW_STOCK_DAYS = 5
 
     /** Largest count the app accepts as input. */
