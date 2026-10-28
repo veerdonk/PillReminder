@@ -36,6 +36,7 @@ Wave 5:  T12 integration hardening + manual test pass
 | T17 | Pills refilled button (FR-10.5) | T15, T16 | [x] |
 | T18 | Call the pharmacy warnings (FR-10.6) | T14, T16 | [x] |
 | T19 | No reminders or alarms while out of pills (FR-10.7) | T18 | [x] |
+| T20 | Vibrate and chime when a reminder shows (FR-2.3) | T6 | [x] |
 
 T6 integrates T7, T8 and T9 through their interfaces. If one of those isn't done yet,
 T6 uses a no-op/fake implementation and the owning task wires the real one into `AppContainer`.
@@ -352,3 +353,15 @@ passes on the phone.
 refill; M31 passes on the phone.
 
 *Done 2026-10-14 (owner request). Assumption A65 in 01. M31 is open for the owner.*
+
+## T20 — Vibrate and chime when a reminder shows
+**Do:**
+- `Settings.reminderVibrate` and `reminderChime` (both default on), stored and editable in
+  Settings → Doses, carried on `ReminderSpec`.
+- A silent reminder channel (`reminders_v2`) and `ReminderFeedback`, which buzzes and chimes
+  when a reminder first shows, following the ringer mode and Do Not Disturb (design §7).
+
+**Accept when:** unit tests cover the ringer-mode rule, when the notifier alerts, the controller,
+the form and the stored keys; M32 passes on the phone.
+
+*Done 2026-10-28 (owner request). Assumption A66 in 01. M32 is open for the owner.*

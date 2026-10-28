@@ -536,6 +536,16 @@ class ReminderControllerTest {
     }
 
     @Test
+    fun `the reminder carries the vibrate and chime switches`() = runTest {
+        val h = harness(waiting, t("12:00"))
+        h.settings.value = Settings(reminderVibrate = false, reminderChime = true)
+        h.controller.tick()
+        val spec = h.log.calls.filterIsInstance<Call.ShowReminder>().last().spec
+        assertEquals(false, spec.vibrate)
+        assertEquals(true, spec.chime)
+    }
+
+    @Test
     fun `status on - the last dose leaves a call-the-pharmacy warning under five days`() = runTest {
         val h = harness(waiting.copy(nextDose = 3, doses = listOf(taken(1, t("07:30")), taken(2, t("11:30")))), t("15:30"))
         h.settings.value = Settings(showStatusNotification = true, pharmacyPhone = "010 123 4567")

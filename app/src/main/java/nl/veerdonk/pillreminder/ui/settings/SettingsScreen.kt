@@ -171,6 +171,12 @@ internal fun SettingsContent(
                 SwitchField(R.string.setting_status_notification, R.string.setting_status_notification_hint, form.showStatusNotification) { on ->
                     onEdit { it.copy(showStatusNotification = on) }
                 }
+                SwitchField(R.string.setting_reminder_vibrate, R.string.setting_reminder_vibrate_hint, form.reminderVibrate) { on ->
+                    onEdit { it.copy(reminderVibrate = on) }
+                }
+                SwitchField(R.string.setting_reminder_chime, R.string.setting_reminder_chime_hint, form.reminderChime) { on ->
+                    onEdit { it.copy(reminderChime = on) }
+                }
             }
 
             Group(R.string.settings_group_pharmacy) {

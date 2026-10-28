@@ -30,6 +30,8 @@ data class Settings(
     val dayRolloverTime: LocalTime = LocalTime.of(3, 0),
     val alarmSoundUri: String? = null, // null = system default alarm
     val showStatusNotification: Boolean = false, // FR-2.4: persistent notification between doses
+    val reminderVibrate: Boolean = true, // FR-2.3: vibrate when a reminder first shows
+    val reminderChime: Boolean = true, // FR-2.3: chime when a reminder first shows, if sound is on
     val pharmacyPhone: String? = null, // FR-10.4: null = no "Call pharmacy" button
     val bottleSize: Int = 90, // FR-10.5: pills added by "Pills refilled"
 ) {

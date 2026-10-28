@@ -55,6 +55,8 @@ class SettingsRepositoryTest {
         dayRolloverTime = LocalTime.MIDNIGHT,
         alarmSoundUri = "content://media/internal/audio/media/42",
         showStatusNotification = true,
+        reminderVibrate = false,
+        reminderChime = false,
         pharmacyPhone = "+31 20 123 4567",
         bottleSize = 120,
     )
@@ -149,6 +151,19 @@ class SettingsRepositoryTest {
         repo.update(allChanged)
         store.edit { it.remove(booleanPreferencesKey("show_status_notification")) }
         assertEquals(allChanged.copy(showStatusNotification = false), repo.current())
+    }
+
+    @Test
+    fun missingReminderVibrateAndChimeKeysReadAsOn() = runTest {
+        // A store written before the settings existed: the reminder buzzed and chimed then.
+        val store = newDataStore()
+        val repo = DataStoreSettingsRepository(store)
+        repo.update(allChanged)
+        store.edit {
+            it.remove(booleanPreferencesKey("reminder_vibrate"))
+            it.remove(booleanPreferencesKey("reminder_chime"))
+        }
+        assertEquals(allChanged.copy(reminderVibrate = true, reminderChime = true), repo.current())
     }
 
     @Test

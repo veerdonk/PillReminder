@@ -3,10 +3,10 @@ package nl.veerdonk.pillreminder.platform
 import android.Manifest
 import android.app.Application
 import android.app.Notification
+import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
-import android.provider.Settings
 import nl.veerdonk.pillreminder.R
 import nl.veerdonk.pillreminder.core.model.DoseSource
 import nl.veerdonk.pillreminder.core.model.LowStock
@@ -43,7 +43,13 @@ class AndroidNotifierTest {
     private val context: Application = RuntimeEnvironment.getApplication()
     private val notificationManager: NotificationManager = context.getSystemService(NotificationManager::class.java)
     private val shadow: ShadowNotificationManager = shadowOf(notificationManager)
-    private val notifier = AndroidNotifier(context, zone = { ZoneId.of("Europe/Amsterdam") })
+    private val alerts = mutableListOf<ReminderAlert>()
+    private val feedback = object : ReminderFeedback {
+        override fun alert(vibrate: Boolean, chime: Boolean) {
+            alerts += ReminderAlert(vibrate, chime)
+        }
+    }
+    private val notifier = AndroidNotifier(context, zone = { ZoneId.of("Europe/Amsterdam") }, feedback = feedback)
 
     private val day = LocalDate.parse("2026-10-13")
 
@@ -52,6 +58,8 @@ class AndroidNotifierTest {
         subtitle: ReminderSubtitle? = null,
         lowStock: LowStock? = null,
         pharmacyPhone: String? = null,
+        vibrate: Boolean = true,
+        chime: Boolean = true,
     ) = ReminderSpec(
         dayId = day,
         dose = dose,
@@ -62,6 +70,8 @@ class AndroidNotifierTest {
         subtitle = subtitle,
         lowStock = lowStock,
         pharmacyPhone = pharmacyPhone,
+        vibrate = vibrate,
+        chime = chime,
     )
 
     private fun ring(canSnooze: Boolean, snoozesLeft: Int) =
@@ -83,12 +93,58 @@ class AndroidNotifierTest {
     }
 
     @Test
-    fun `reminder channel is high importance with the default sound and vibration`() {
+    fun `reminder channel is high importance without sound or vibration`() {
+        // ReminderFeedback buzzes and chimes instead, as the settings say (A66).
         val channel = notificationManager.getNotificationChannel(AndroidNotifier.CHANNEL_REMINDERS)
         assertEquals("Pill reminders", channel.name)
         assertEquals(NotificationManager.IMPORTANCE_HIGH, channel.importance)
-        assertEquals(Settings.System.DEFAULT_NOTIFICATION_URI, channel.sound)
-        assertTrue(channel.shouldVibrate())
+        assertNull(channel.sound)
+        assertFalse(channel.shouldVibrate())
+    }
+
+    @Test
+    fun `the old reminder channel is removed`() {
+        notificationManager.createNotificationChannel(
+            NotificationChannel("reminders_v1", "Pill reminders", NotificationManager.IMPORTANCE_HIGH),
+        )
+        notifier.ensureChannels()
+        assertNull(notificationManager.getNotificationChannel("reminders_v1"))
+    }
+
+    @Test
+    fun `a fresh reminder alerts with the settings it carries`() {
+        notifier.showReminder(reminder(dose = 1, vibrate = true, chime = false))
+        assertEquals(listOf(ReminderAlert(vibrate = true, chime = false)), alerts)
+    }
+
+    @Test
+    fun `re-posting the reminder that's up doesn't alert again`() {
+        notifier.showReminder(reminder(dose = 1))
+        notifier.showReminder(reminder(dose = 1, lowStock = LowStock(pillsLeft = 10, daysLeft = 3)))
+        assertEquals(1, alerts.size)
+    }
+
+    @Test
+    fun `the next dose's reminder alerts again`() {
+        notifier.showReminder(reminder(dose = 1))
+        notifier.cancelReminder()
+        notifier.showReminder(reminder(dose = 2))
+        assertEquals(2, alerts.size)
+    }
+
+    @Test
+    fun `a reminder after a ring or while driving doesn't alert`() {
+        notifier.showReminder(reminder(dose = 1, subtitle = ReminderSubtitle.AlarmStopped))
+        notifier.cancelReminder()
+        notifier.showReminder(reminder(dose = 1, subtitle = ReminderSubtitle.HeldWhileDriving))
+        assertTrue(alerts.isEmpty())
+    }
+
+    @Test
+    fun `no alert when the reminder can't be posted`() {
+        shadowOf(context).denyPermissions(Manifest.permission.POST_NOTIFICATIONS)
+        notifier.showReminder(reminder(dose = 1))
+        assertTrue(alerts.isEmpty())
     }
 
     @Test

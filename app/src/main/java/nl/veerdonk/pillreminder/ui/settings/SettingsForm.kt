@@ -57,6 +57,8 @@ data class SettingsForm(
     val rollover: LocalTime,
     val alarmSoundUri: String?,
     val showStatusNotification: Boolean,
+    val reminderVibrate: Boolean,
+    val reminderChime: Boolean,
     val pharmacyPhone: String,
     val bottleSize: String,
 ) {
@@ -103,6 +105,8 @@ data class SettingsForm(
             dayRolloverTime = rollover,
             alarmSoundUri = alarmSoundUri,
             showStatusNotification = showStatusNotification,
+            reminderVibrate = reminderVibrate,
+            reminderChime = reminderChime,
             pharmacyPhone = pharmacyPhone.trim().ifEmpty { null }, // empty = no number
             bottleSize = bottle!!,
         )
@@ -136,6 +140,8 @@ data class SettingsForm(
                 rollover = s.dayRolloverTime,
                 alarmSoundUri = s.alarmSoundUri,
                 showStatusNotification = s.showStatusNotification,
+                reminderVibrate = s.reminderVibrate,
+                reminderChime = s.reminderChime,
                 pharmacyPhone = s.pharmacyPhone.orEmpty(),
                 bottleSize = s.bottleSize.toString(),
             )
