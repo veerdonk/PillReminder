@@ -213,7 +213,9 @@ data class Outputs(
 )
 data class ReminderSpec(val dayId: LocalDate, val dose: Int, val doseCount: Int, val alarmStyle: Boolean, val canSnooze: Boolean, val snoozesLeft: Int, val subtitle: ReminderSubtitle?,
                         val lowStock: LowStock? = null,   // always null from outputs(); the orchestrator fills it (01 FR-10.3)
-                        val pharmacyPhone: String? = null) // likewise, from S.pharmacyPhone (01 FR-10.6)
+                        val pharmacyPhone: String? = null, // likewise, from S.pharmacyPhone (01 FR-10.6)
+                        val vibrate: Boolean = false,      // likewise, from S.reminderVibrate (01 FR-2.3)
+                        val chime: Boolean = false)        // likewise, from S.reminderChime (01 FR-2.3)
 data class LowStock(val pillsLeft: Int, val daysLeft: Int)
 sealed interface ReminderSubtitle {                 // worded by :app from strings.xml (A9)
     data class Snoozed(val until: Instant) : ReminderSubtitle   // "Snoozed until HH:MM", device zone

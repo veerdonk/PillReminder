@@ -108,7 +108,12 @@ class ReminderController(
             } else {
                 apply(
                     outputs.copy(
-                        reminder = outputs.reminder?.copy(lowStock = lowStock, pharmacyPhone = settings.pharmacyPhone),
+                        reminder = outputs.reminder?.copy(
+                            lowStock = lowStock,
+                            pharmacyPhone = settings.pharmacyPhone,
+                            vibrate = settings.reminderVibrate,
+                            chime = settings.reminderChime,
+                        ),
                         status = outputs.status ?: callPharmacyStatus(t.state, settings, lowStock),
                     ),
                     userVisible = t.state.phase in USER_VISIBLE_PHASES,

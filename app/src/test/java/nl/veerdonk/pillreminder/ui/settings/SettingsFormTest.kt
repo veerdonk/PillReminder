@@ -27,6 +27,13 @@ class SettingsFormTest {
         assertEquals(true, defaults.copy(showStatusNotification = true).parse().settings!!.showStatusNotification)
     }
 
+    @Test fun reminderVibrateAndChimeSwitchesRoundTrip() {
+        assertEquals(true, defaults.reminderVibrate)
+        assertEquals(true, defaults.reminderChime)
+        assertEquals(false, defaults.copy(reminderVibrate = false).parse().settings!!.reminderVibrate)
+        assertEquals(false, defaults.copy(reminderChime = false).parse().settings!!.reminderChime)
+    }
+
     @Test fun intervalIsHoursPlusMinutes() {
         assertEquals("3", defaults.doseIntervalHours)
         assertEquals("50", defaults.doseIntervalMinutes)

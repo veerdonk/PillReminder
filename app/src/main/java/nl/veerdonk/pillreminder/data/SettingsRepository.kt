@@ -82,6 +82,8 @@ class DataStoreSettingsRepository(
         p[Keys.HOLD_FIRST_ALARM] = s.holdFirstAlarmUntilFallback
         p[Keys.DAY_ROLLOVER] = s.dayRolloverTime.minuteOfDay()
         p[Keys.SHOW_STATUS_NOTIFICATION] = s.showStatusNotification
+        p[Keys.REMINDER_VIBRATE] = s.reminderVibrate
+        p[Keys.REMINDER_CHIME] = s.reminderChime
         val uri = s.alarmSoundUri
         if (uri == null) p.remove(Keys.ALARM_SOUND_URI) else p[Keys.ALARM_SOUND_URI] = uri
         p[Keys.BOTTLE_SIZE] = s.bottleSize
@@ -111,6 +113,8 @@ class DataStoreSettingsRepository(
                 dayRolloverTime = p[Keys.DAY_ROLLOVER]?.toLocalTime() ?: d.dayRolloverTime,
                 alarmSoundUri = p[Keys.ALARM_SOUND_URI],
                 showStatusNotification = p[Keys.SHOW_STATUS_NOTIFICATION] ?: d.showStatusNotification,
+                reminderVibrate = p[Keys.REMINDER_VIBRATE] ?: d.reminderVibrate,
+                reminderChime = p[Keys.REMINDER_CHIME] ?: d.reminderChime,
                 pharmacyPhone = p[Keys.PHARMACY_PHONE],
                 bottleSize = p[Keys.BOTTLE_SIZE] ?: d.bottleSize,
             )
@@ -141,6 +145,8 @@ class DataStoreSettingsRepository(
         val DAY_ROLLOVER = intPreferencesKey("day_rollover_time")
         val ALARM_SOUND_URI = stringPreferencesKey("alarm_sound_uri")
         val SHOW_STATUS_NOTIFICATION = booleanPreferencesKey("show_status_notification")
+        val REMINDER_VIBRATE = booleanPreferencesKey("reminder_vibrate")
+        val REMINDER_CHIME = booleanPreferencesKey("reminder_chime")
         val PHARMACY_PHONE = stringPreferencesKey("pharmacy_phone")
         val BOTTLE_SIZE = intPreferencesKey("bottle_size")
     }

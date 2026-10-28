@@ -197,6 +197,10 @@
     <string name="setting_hold_first_alarm">First alarm waits for fallback</string>
     <string name="setting_status_notification">Always show next pill</string>
     <string name="setting_status_notification_hint">Keeps a notification showing between doses, with a countdown to the next pill.</string>
+    <string name="setting_reminder_vibrate">Vibrate when a pill is due</string>
+    <string name="setting_reminder_vibrate_hint">A short buzz when a reminder first appears. Not in silent mode or Do Not Disturb.</string>
+    <string name="setting_reminder_chime">Chime when a pill is due</string>
+    <string name="setting_reminder_chime_hint">Plays your notification sound once when a reminder first appears, if the phone\'s sound is on.</string>
     <string name="setting_hold_first_alarm_hint">When you\'re detected as awake, the first reminder still appears right away, but its alarm doesn\'t ring before the fallback time.</string>
     <string name="setting_ring_duration">Ring duration, minutes (1–10)</string>
     <string name="setting_poll_interval">Detection poll interval, minutes (1–15)</string>

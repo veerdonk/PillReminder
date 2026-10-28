@@ -31,6 +31,9 @@ data class ReminderSpec(
     val lowStock: LowStock? = null,
     /** Set by the controller from `Settings.pharmacyPhone`, for the out-of-pills reminder (FR-10.6). */
     val pharmacyPhone: String? = null,
+    /** Set by the controller from `Settings.reminderVibrate` / `reminderChime` (FR-2.3). */
+    val vibrate: Boolean = false,
+    val chime: Boolean = false,
 )
 
 /**

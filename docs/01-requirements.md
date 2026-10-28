@@ -55,8 +55,10 @@ settings to make the app reliable (see `06-device-setup-oneplus.md`).
   - Dose 2 and later: **"I took my pill"** and **"I'm done for today"**.
 - **FR-2.2** The reminder is *ongoing*: swiping it doesn't dismiss it. Tapping its body
   opens the app on the Home screen.
-- **FR-2.3** A reminder uses the normal notification sound and vibration. These follow the
-  phone's ringer mode as usual.
+- **FR-2.3** When a reminder first shows (every dose, not only dose 1), the phone vibrates
+  and plays a short chime (the notification sound), each with its own Settings switch
+  (`reminderVibrate`, `reminderChime`, both default on; owner request). These follow the
+  phone's ringer mode as usual: the chime only when the sound is on (A66).
 - **FR-2.4** (owner request) Optional status notification, a Settings switch "Always show next
   pill" (`showStatusNotification`, default off). When on, a silent ongoing notification stays
   up whenever no reminder or alarm shows. Between doses it reads "Pill N of M at HH:MM" with a
@@ -175,6 +177,8 @@ alarms are recomputed where the spec defines them in terms of the setting (see s
 | `dayRolloverTime` | 03:00 | 00:00–06:00 and < both earliest times | Advanced setting |
 | `alarmSound` | System default alarm | Ringtone picker | Nice-to-have |
 | `showStatusNotification` | off | on/off | FR-2.4 |
+| `reminderVibrate` | on | on/off | FR-2.3. Vibrate when a reminder first shows |
+| `reminderChime` | on | on/off | FR-2.3. Chime when a reminder first shows, if the sound is on |
 | `pharmacyPhone` | empty | Up to 30 digits, spaces and `+ - ( )` | FR-10.4. Empty = no button |
 | `bottleSize` | 90 | 1–999 | FR-10.5. Pills added by "Pills refilled" |
 
@@ -483,3 +487,12 @@ Open:
   overdue and its ringing time has come, or nothing once the day is done. "I took my pill"
   still works from Home and keeps the count at 0. A count that is off (not tracked) never
   suppresses anything.
+- **A66** (owner request) Vibrate and chime (FR-2.3). The reminder channel is now silent
+  (`reminders_v2`, no sound, no vibration; `reminders_v1` is deleted), and the app buzzes
+  (two short pulses) and plays the default notification sound once itself, so the two Settings
+  switches decide rather than the system channel settings. Both default on, which keeps the
+  old behaviour. It alerts when a reminder is posted while none is up: each dose's first
+  reminder, also when it replaces the status notification (FR-2.4). A re-post of the reminder
+  that's already up, and the reminder after a ring or while driving (it has a subtitle), stay
+  quiet, as before. Ringer normal: buzz and chime; vibrate: buzz only; silent or Do Not
+  Disturb: neither. A reminder re-shown after a reboot alerts again.

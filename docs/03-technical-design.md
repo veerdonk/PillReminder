@@ -99,6 +99,8 @@ data class Settings(
     val dayRolloverTime: LocalTime = LocalTime.of(3, 0),
     val alarmSoundUri: String? = null,          // null = system default alarm
     val showStatusNotification: Boolean = false, // FR-2.4
+    val reminderVibrate: Boolean = true,         // FR-2.3, vibrate when a reminder first shows
+    val reminderChime: Boolean = true,           // FR-2.3, chime when a reminder first shows
     val pharmacyPhone: String? = null,           // FR-10.4, null = no "Call pharmacy" button
     val bottleSize: Int = 90,                    // FR-10.5, pills added by "Pills refilled"
 ) {
@@ -290,7 +292,7 @@ so to change them, bump the channel ID.
 
 | ID | Name | Importance | Sound | Vibration | Use |
 |----|------|-----------|-------|-----------|-----|
-| `reminders_v1` | Pill reminders | HIGH | default notification sound | yes | Reminder notification |
+| `reminders_v2` | Pill reminders | HIGH | **none** (`ReminderFeedback` chimes) | **off** (`ReminderFeedback` vibrates) | Reminder notification |
 | `alarm_v1` | Pill alarm | HIGH | **none** (service plays sound) | **off** (service vibrates) | Alarm foreground notification with full-screen intent |
 | `status_v1` | Time until next pill | LOW | none | off | Optional status notification (FR-2.4) |
 
@@ -301,6 +303,13 @@ its notification by ID, asynchronously, so a reminder posted on the same ID righ
 cancels the reminder while ringing, and the alarm notification goes away when the service stops.
 The reminder that follows a ring (subtitle `Snoozed` or `AlarmStopped`) is posted with
 `setSilent(true)`, so the alarm isn't followed by a second buzz; a fresh REMINDER alerts normally.
+
+**Reminder alert** (01 FR-2.3, A66): the reminder channel is silent. When `showReminder` posts a
+reminder without a subtitle while none is up (checked with `activeNotifications`), it calls
+`ReminderFeedback.alert(spec.vibrate, spec.chime)`; the controller fills both from
+`Settings.reminderVibrate` / `reminderChime`. `AndroidReminderFeedback` vibrates once
+(`USAGE_NOTIFICATION`) unless the ringer is silent, and plays the default notification sound once
+(`USAGE_NOTIFICATION`) only with the ringer on normal; neither under Do Not Disturb.
 
 **Reminder notification:**
 - `setOngoing(true)`, `setOnlyAlertOnce(true)` (so re-posting an identical one doesn't re-buzz),

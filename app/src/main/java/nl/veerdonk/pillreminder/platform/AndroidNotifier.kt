@@ -9,9 +9,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.media.AudioAttributes
 import android.net.Uri
-import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import nl.veerdonk.pillreminder.R
@@ -39,10 +37,14 @@ import java.time.format.DateTimeFormatter
  *
  * Posting is skipped when POST_NOTIFICATIONS isn't granted; the setup checklist (T11) asks
  * for it. [zone] is read on every post, so "Snoozed until" follows a time zone change.
+ *
+ * The reminder channel is silent: when a reminder first shows, [feedback] vibrates and chimes as
+ * the settings say (FR-2.3, A66).
  */
 class AndroidNotifier(
     private val context: Context,
     private val zone: () -> ZoneId = ZoneId::systemDefault,
+    private val feedback: ReminderFeedback = AndroidReminderFeedback(context),
 ) : Notifier {
 
     private val notificationManager = NotificationManagerCompat.from(context)
@@ -53,15 +55,9 @@ class AndroidNotifier(
             context.getString(R.string.channel_reminders_name),
             NotificationManager.IMPORTANCE_HIGH,
         ).apply {
-            // The default sound and vibration follow the ringer mode as usual (FR-2.3).
-            setSound(
-                Settings.System.DEFAULT_NOTIFICATION_URI,
-                AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build(),
-            )
-            enableVibration(true)
+            // ReminderFeedback buzzes and chimes itself, as the settings say (FR-2.3, A66).
+            setSound(null, null)
+            enableVibration(false)
         }
         val alarm = NotificationChannel(
             CHANNEL_ALARM,
@@ -83,8 +79,10 @@ class AndroidNotifier(
             setShowBadge(false)
         }
         // Creating an existing channel only updates its name, so this is safe on every start.
-        context.getSystemService(NotificationManager::class.java)
-            .createNotificationChannels(listOf(reminders, alarm, status))
+        val manager = context.getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannels(listOf(reminders, alarm, status))
+        // reminders_v1 played the default sound and vibrated itself (before A66).
+        manager.deleteNotificationChannel(OLD_CHANNEL_REMINDERS)
     }
 
     override fun showReminder(spec: ReminderSpec) {
@@ -95,6 +93,8 @@ class AndroidNotifier(
             .setContentIntent(activityIntent(REQUEST_CONTENT, MainActivity::class.java, spec.dayId, spec.dose))
         addDecisionActions(builder, spec.dayId, spec.dose, DoseSource.NOTIFICATION)
         val subtitle = spec.subtitle?.let(::subtitleText)
+        // Like setOnlyAlertOnce: a re-post of the reminder that's already up doesn't buzz again.
+        val fresh = subtitle == null && !isShowing(NOTIFICATION_ID)
         if (subtitle != null) {
             // A subtitle only exists right after a ring (SNOOZED, PENDING_SILENT): the alarm just
             // alerted, so this re-post stays silent (01 A26). HELD_DRIVING stays silent too:
@@ -116,7 +116,7 @@ class AndroidNotifier(
         }
         val lines = listOfNotNull(subtitle, lowStock, context.getString(R.string.notification_text))
         if (lines.size > 1) builder.setStyle(NotificationCompat.BigTextStyle().bigText(lines.joinToString("\n")))
-        post(NOTIFICATION_ID, builder.build())
+        if (post(NOTIFICATION_ID, builder.build()) && fresh) feedback.alert(spec.vibrate, spec.chime)
     }
 
     override fun cancelReminder() {
@@ -230,11 +230,15 @@ class AndroidNotifier(
         )
     }
 
-    private fun post(id: Int, notification: Notification) {
+    /** Posts [notification]; false when it wasn't posted for lack of the permission. */
+    private fun post(id: Int, notification: Notification): Boolean {
         // Without the permission the system would drop the notification anyway; don't call it.
-        if (context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
+        if (context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return false
         notificationManager.notify(id, notification)
+        return true
     }
+
+    private fun isShowing(id: Int): Boolean = notificationManager.activeNotifications.any { it.id == id }
 
     private fun statusContentIntent(): PendingIntent =
         PendingIntent.getActivity(
@@ -266,7 +270,8 @@ class AndroidNotifier(
         )
 
     companion object {
-        const val CHANNEL_REMINDERS = "reminders_v1"
+        const val CHANNEL_REMINDERS = "reminders_v2"
+        private const val OLD_CHANNEL_REMINDERS = "reminders_v1"
         const val CHANNEL_ALARM = "alarm_v1"
         const val CHANNEL_STATUS = "status_v1"
 
